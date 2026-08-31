@@ -34,9 +34,20 @@ export default function AuralPage() {
     }, 2600);
   };
 
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (activeStream) {
+        activeStream.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [activeStream]);
+
   const handleMicStart = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setActiveStream(stream);
       const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
@@ -57,15 +68,10 @@ export default function AuralPage() {
       setTimeout(() => {
         clearInterval(interval);
         stream.getTracks().forEach(t => t.stop());
+        setActiveStream(null);
+        audioCtx.close();
         setIsRecording(false);
-        setSingingScore({ pitch: 94, rhythm: 89, total: 92 });
-        recordPracticeAttemptInStore(loadUserStore(), {
-          skillId: 'a7',
-          isCorrect: true,
-          confidenceRating: 4,
-          responseTimeMs: 5000,
-          date: new Date().toISOString(),
-        });
+        // Note: Raw mic pitch evaluation prototype - actual sung score depends on pitch analysis matching.
       }, 5000);
     } catch (err) {
       alert('Microphone access is required for Sight-Singing Studio.');
@@ -101,24 +107,28 @@ export default function AuralPage() {
         {/* Tab Switcher */}
         <div className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto">
           <button
+            type="button"
             onClick={() => setActiveTab('noteInKey')}
             className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'noteInKey' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Note-in-Key
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('chordsAnd64')}
             className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'chordsAnd64' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Chords & 6/4 Functions
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('dictation')}
             className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'dictation' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Melodic Dictation
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('sightSinging')}
             className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'sightSinging' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -143,6 +153,7 @@ export default function AuralPage() {
               <p className="text-xs text-slate-400">Tonal key establishment followed by target pitch class identification.</p>
             </div>
             <button
+              type="button"
               onClick={playCadence}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs flex items-center space-x-2 transition-all"
             >
@@ -163,6 +174,7 @@ export default function AuralPage() {
               { degree: 1, solfege: 'Di (♭2)' },
             ].map((item) => (
               <button
+                type="button"
                 key={item.degree}
                 onClick={() => {
                   if (item.degree === targetDegree) {
@@ -189,6 +201,7 @@ export default function AuralPage() {
               <p className="text-xs text-slate-400">Distinguish cadential 6/4 vs passing 6/4 vs pedal 6/4 aurally.</p>
             </div>
             <button
+              type="button"
               onClick={() => {
                 // Play Cadential 6/4 progression (I6/4 - V7 - I)
                 soundEngine.playChord([60, 64, 67], 0.6); // I
@@ -206,6 +219,7 @@ export default function AuralPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {['Cadential 6/4', 'Passing 6/4', 'Pedal / Neighbor 6/4'].map((func, i) => (
               <button
+                type="button"
                 key={i}
                 onClick={() => handleRecordSuccess('a3')}
                 className="p-5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-center text-sm font-bold text-slate-100 hover:border-amber-400/50 transition-all"
@@ -235,10 +249,11 @@ export default function AuralPage() {
               <p className="text-xs text-slate-400">Listen to melody and enter notes on interactive staff.</p>
             </div>
             <button
+              type="button"
               onClick={() => handleRecordSuccess('a6')}
               className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs"
             >
-              Submit Dictation
+              Submit Dictation (Prototype)
             </button>
           </div>
         </div>
@@ -253,6 +268,7 @@ export default function AuralPage() {
               <p className="text-xs text-slate-400">Real-time pitch autocorrelation, cents deviation, and accuracy scoring.</p>
             </div>
             <button
+              type="button"
               onClick={handleMicStart}
               disabled={isRecording}
               className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2 transition-all ${
@@ -262,7 +278,7 @@ export default function AuralPage() {
               }`}
             >
               <Mic className="w-4 h-4" />
-              <span>{isRecording ? 'Listening (5s)...' : 'Start Recording'}</span>
+              <span>{isRecording ? 'Listening (5s)...' : 'Start Recording (Prototype)'}</span>
             </button>
           </div>
 

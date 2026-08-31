@@ -11,18 +11,14 @@ export interface MIDIMessage {
 
 type MIDICallback = (msg: MIDIMessage) => void;
 
-interface WebMidiPort {
-  onmidimessage: ((event: WebMidiEvent) => void) | null;
+interface WebMidiInput {
+  onmidimessage: ((event: { data: Uint8Array }) => void) | null;
 }
 
 interface WebMidiAccess {
   inputs: {
-    values: () => IterableIterator<WebMidiPort>;
+    values: () => IterableIterator<WebMidiInput>;
   };
-}
-
-interface WebMidiEvent {
-  data: Uint8Array | number[];
 }
 
 class MIDIController {
@@ -39,8 +35,7 @@ class MIDIController {
   public async init(): Promise<boolean> {
     if (!this.isSupported) return false;
     try {
-      const nav = navigator as unknown as { requestMIDIAccess: () => Promise<WebMidiAccess> };
-      this.midiAccess = await nav.requestMIDIAccess();
+      this.midiAccess = await (navigator as unknown as { requestMIDIAccess: () => Promise<WebMidiAccess> }).requestMIDIAccess();
       const inputs = this.midiAccess.inputs.values();
       for (const input of inputs) {
         input.onmidimessage = this.handleMIDIMessage.bind(this);
@@ -58,7 +53,7 @@ class MIDIController {
     };
   }
 
-  private handleMIDIMessage(event: WebMidiEvent): void {
+  private handleMIDIMessage(event: { data: Uint8Array }): void {
     const [status, note, velocity] = event.data;
     const command = status >> 4;
 

@@ -4,16 +4,15 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { loadUserStore, saveUserStore, UserStoreState } from '@/lib/storage/store';
-import { Music, Mic, Piano, BookOpen, BarChart3, Smartphone, Home } from 'lucide-react';
+import { Music, Mic, Piano, BookOpen, BarChart3, ShieldAlert, Smartphone, Home, Zap } from 'lucide-react';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<UserStoreState | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    queueMicrotask(() => {
-      setStore(loadUserStore());
-    });
+    const loaded = loadUserStore();
+    setStore(loaded);
   }, []);
 
   const toggleRoadMode = () => {
@@ -48,6 +47,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         {/* Action Controls */}
         <div className="flex items-center space-x-3">
           <button
+            type="button"
             onClick={toggleRoadMode}
             aria-label={`Toggle practice mode, currently ${store?.isRoadMode ? 'Road Mode' : 'Home Mode'}`}
             aria-pressed={!!store?.isRoadMode}

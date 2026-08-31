@@ -84,6 +84,13 @@ describe('Twelve-Tone Serialism Engine', () => {
     expect(r0Result).toEqual([...p0].reverse());
   });
 
+  it('handles twelve-tone inversion correctly for rows not starting on 0', () => {
+    const nonZeroP0 = [7, 8, 0, 11, 2, 1, 9, 10, 4, 3, 5, 6];
+    const i0 = getRowTransformation(nonZeroP0, 'I', 0);
+    // I0[0] should start on nonZeroP0[0] = 7
+    expect(i0[0]).toBe(7);
+  });
+
   it('identifies row transformations correctly', () => {
     const r0 = [...p0].reverse();
     const found = identifyRowTransformation(p0, r0);
