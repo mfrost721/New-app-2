@@ -60,6 +60,7 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
   // Expected impact: Faster auto-correlation computation and reduced garbage collection pressure.
   const buf = buffer.subarray(r1, r2);
   const newSize = buf.length;
+  if (newSize < 3) return null;
 
   const c = new Float32Array(newSize);
   for (let i = 0; i < newSize; i++) {
@@ -71,7 +72,7 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
   }
 
   let d = 0;
-  while (c[d] > c[d + 1]) d++;
+  while (d + 1 < newSize && c[d] > c[d + 1]) d++;
 
   let maxval = -1;
   let maxpos = -1;
@@ -83,6 +84,7 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
   }
 
   let T0 = maxpos;
+  if (T0 <= 0 || T0 >= newSize - 1) return null;
   const x1 = c[T0 - 1];
   const x2 = c[T0];
   const x3 = c[T0 + 1];
