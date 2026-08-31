@@ -19,7 +19,6 @@ export default function TheoryPage() {
 
   // Matrix Speed Run state
   const sampleRow = [0, 11, 7, 8, 2, 1, 9, 10, 4, 3, 5, 6];
-  const [speedRunTime, setSpeedRunTime] = useState<number>(0);
   const [userAnswer, setUserAnswer] = useState<string>('');
   const [matrixResult, setMatrixResult] = useState<string | null>(null);
 

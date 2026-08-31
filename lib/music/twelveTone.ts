@@ -71,7 +71,7 @@ export function getRowTransformation(p0Row: number[], form: RowForm, index: numb
     case 'I': {
       // Find row in matrix whose top element (col index) corresponds to target Inversion
       // I_n starts at (p0First + index) % 12 at col header
-      const targetFirstNote = (index) % 12;
+      const targetFirstNote = (p0First + index) % 12;
       // Inversion col is column in matrix: matrix[0][col]
       // P_0[0] is matrix[0][0]. Inversion starting at index:
       // Note I_n first note = index
