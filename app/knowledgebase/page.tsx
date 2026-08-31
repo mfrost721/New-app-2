@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Search, ArrowRight, Music, Zap } from 'lucide-react';
+import { BookOpen, Search, ArrowRight } from 'lucide-react';
 
 interface KnowledgeArticle {
   id: string;

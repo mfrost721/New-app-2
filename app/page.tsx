@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { loadUserStore, UserStoreState } from '@/lib/storage/store';
 import { calculateExamReadiness } from '@/lib/adaptive/mastery';
 import { generatePracticePrescription } from '@/lib/adaptive/practicePrescription';
-import { ShieldAlert, Zap, Clock, Flame, Play, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Zap, Clock, CheckCircle2 } from 'lucide-react';
 
 export default function HomeDashboard() {
   const [store, setStore] = useState<UserStoreState | null>(null);

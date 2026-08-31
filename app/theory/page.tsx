@@ -6,10 +6,9 @@ import MatrixGrid from '@/components/MatrixGrid';
 import ScoreViewer from '@/components/ScoreViewer';
 import KeyboardVisualizer from '@/components/KeyboardVisualizer';
 import { getNormalOrder, getPrimeForm, getIntervalVector, formatIntervalVector } from '@/lib/music/pitchClass';
-import { generateTwelveToneMatrix } from '@/lib/music/twelveTone';
 import { buildScale, SCALE_DEFINITIONS, ModeName } from '@/lib/music/scalesAndModes';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
-import { Brain, Check, X, Flame, Sparkles, Clock } from 'lucide-react';
+import { Brain, Check, Clock } from 'lucide-react';
 
 export default function TheoryPage() {
   const [activeTab, setActiveTab] = useState<'setTheory' | 'matrixSpeedRun' | 'modes' | 'scoreAnalysis' | 'mockExam'>('setTheory');
