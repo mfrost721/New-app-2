@@ -62,11 +62,9 @@ export default function ScoreViewer({
         {/* Notes Display */}
         <div className="z-10 flex-1 flex items-center justify-around h-full">
           {notes.map((n, idx) => (
-            <button
+            <div
               key={idx}
-              type="button"
               onClick={() => onNoteClick && onNoteClick(idx)}
-              aria-label={`Note ${n.accidental ? `${n.accidental}${n.pitch}` : n.pitch}, ${n.duration}${n.annotation ? `, annotation ${n.annotation}` : ''}`}
               className="relative flex flex-col items-center cursor-pointer group hover:scale-105 transition-transform"
             >
               {/* Optional Annotation Badge */}
@@ -87,7 +85,7 @@ export default function ScoreViewer({
 
               {/* Pitch Label */}
               <span className="text-[10px] text-slate-400 font-mono mt-3">{n.pitch}</span>
-            </button>
+            </div>
           ))}
         </div>
 

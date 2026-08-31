@@ -148,8 +148,7 @@ export function buildScale(tonicNote: string, modeName: ModeName): { pitchClasse
   if (!def) throw new Error(`Unknown mode: ${modeName}`);
 
   const pitchClasses = def.intervals.map(i => (tonicPc + i) % 12);
-  const tonicUpper = tonicNote.toUpperCase();
-  const preferFlat = ['F', 'BB', 'EB', 'AB', 'DB', 'GB', 'DM', 'GM', 'CM', 'FM'].some(k => tonicUpper.includes(k));
+  const preferFlat = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Dm', 'Gm', 'Cm', 'Fm'].some(k => tonicNote.toUpperCase().includes(k));
   const noteNames = pitchClasses.map(pc => pitchClassToNote(pc, preferFlat));
 
   return { pitchClasses, noteNames };

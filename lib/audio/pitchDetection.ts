@@ -64,10 +64,8 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
     }
   }
 
-  if (newSize < 3) return null;
-
   let d = 0;
-  while (d + 1 < newSize && c[d] > c[d + 1]) d++;
+  while (c[d] > c[d + 1]) d++;
 
   let maxval = -1;
   let maxpos = -1;
@@ -77,8 +75,6 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
       maxpos = i;
     }
   }
-
-  if (maxpos <= 0 || maxpos >= newSize - 1) return null;
 
   let T0 = maxpos;
   const x1 = c[T0 - 1];
@@ -99,6 +95,6 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
     midi,
     noteName,
     centsDeviation: cents,
-    clarity: c[0] ? Math.min(1, Math.round((maxval / c[0]) * 100) / 100) : 0,
+    clarity: Math.min(1, Math.round((maxval / c[0]) * 100) / 100),
   };
 }

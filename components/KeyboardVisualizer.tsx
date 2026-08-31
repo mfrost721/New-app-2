@@ -47,8 +47,6 @@ export default function KeyboardVisualizer({
   const [pressedMidis, setPressedMidis] = useState<number[]>([]);
 
   useEffect(() => {
-    void midiController.init();
-
     // Listen to real MIDI hardware keyboard inputs
     const cleanup = midiController.onNote((msg) => {
       if (msg.type === 'noteon') {
@@ -102,7 +100,6 @@ export default function KeyboardVisualizer({
             return (
               <button
                 key={midi}
-                type="button"
                 onClick={() => handleKeyClick(midi)}
                 aria-label={keyAriaLabel}
                 aria-pressed={isActive}
@@ -123,7 +120,6 @@ export default function KeyboardVisualizer({
           return (
             <button
               key={midi}
-              type="button"
               onClick={() => handleKeyClick(midi)}
               aria-label={keyAriaLabel}
               aria-pressed={isActive}
