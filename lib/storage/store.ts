@@ -97,12 +97,27 @@ export function recordPracticeAttemptInStore(
   let academicStreak = currentState.academicStreak;
   let pianoStreak = currentState.pianoStreak;
 
-  if (currentState.lastAcademicDate !== today) {
+  const getDaysDiff = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    const past = new Date(dateStr).getTime();
+    const curr = new Date(today).getTime();
+    return Math.floor((curr - past) / (1000 * 60 * 60 * 24));
+  };
+
+  const academicDiff = getDaysDiff(currentState.lastAcademicDate);
+  if (academicDiff === null || academicDiff > 1) {
+    academicStreak = 1;
+  } else if (academicDiff === 1) {
     academicStreak += 1;
   }
 
-  if (targetSkill.category === 'Class Piano IV' && currentState.lastPianoDate !== today) {
-    pianoStreak += 1;
+  if (targetSkill.category === 'Class Piano IV') {
+    const pianoDiff = getDaysDiff(currentState.lastPianoDate);
+    if (pianoDiff === null || pianoDiff > 1) {
+      pianoStreak = 1;
+    } else if (pianoDiff === 1) {
+      pianoStreak += 1;
+    }
   }
 
   const updatedState: UserStoreState = {

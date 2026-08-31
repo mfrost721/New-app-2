@@ -69,8 +69,17 @@ export default function PitchClassClock({
           return (
             <g
               key={pc}
+              role="button"
+              tabIndex={0}
+              aria-label={`Pitch class ${pc} (${noteName})`}
               onClick={() => onTogglePc && onTogglePc(pc)}
-              className="cursor-pointer transition-transform duration-150 hover:scale-110 origin-center"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  if (onTogglePc) onTogglePc(pc);
+                }
+              }}
+              className="cursor-pointer transition-transform duration-150 hover:scale-110 origin-center focus:outline-none"
               style={{ transformOrigin: `${x}px ${y}px` }}
             >
               <circle

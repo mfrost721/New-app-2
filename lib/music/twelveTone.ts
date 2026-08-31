@@ -53,36 +53,25 @@ export function generateTwelveToneMatrix(p0Row: number[]): number[][] {
  */
 export function getRowTransformation(p0Row: number[], form: RowForm, index: number): number[] {
   const normP0 = p0Row.map(n => ((n % 12) + 12) % 12);
-  const matrix = generateTwelveToneMatrix(normP0);
   const p0First = normP0[0];
+  const targetIndex = ((index % 12) + 12) % 12;
 
   switch (form) {
     case 'P': {
-      // Find row in matrix starting with note (p0First + index) % 12
-      const targetFirstNote = (p0First + index) % 12;
-      const rowIdx = matrix.findIndex(r => r[0] === targetFirstNote);
-      if (rowIdx !== -1) return matrix[rowIdx];
-      return normP0.map(n => (n + index) % 12);
+      // P_n is P_0 transposed such that its first note is (p0First + n) mod 12
+      return normP0.map(n => (n + targetIndex) % 12);
     }
     case 'R': {
-      const pRow = getRowTransformation(normP0, 'P', index);
+      const pRow = getRowTransformation(normP0, 'P', targetIndex);
       return [...pRow].reverse();
     }
     case 'I': {
-      // Find row in matrix whose top element (col index) corresponds to target Inversion
-      // I_n starts at (p0First + index) % 12 at col header
-      const targetFirstNote = (p0First + index) % 12;
-      // Inversion col is column in matrix: matrix[0][col]
-      // P_0[0] is matrix[0][0]. Inversion starting at index:
-      // Note I_n first note = index
-      const colIdx = matrix[0].findIndex((_, c) => matrix[0][c] === targetFirstNote);
-      if (colIdx !== -1) {
-        return matrix.map(row => row[colIdx]);
-      }
-      return normP0.map(n => ((index * 2 - n) % 12 + 12) % 12);
+      // I_n is inverted relative to P_0 such that its first note is (p0First + n) mod 12
+      // Formula: I_n[i] = (p0First + targetIndex + p0First - normP0[i]) mod 12 = (2 * p0First + targetIndex - normP0[i]) mod 12
+      return normP0.map(n => ((2 * p0First + targetIndex - n) % 12 + 12) % 12);
     }
     case 'RI': {
-      const iRow = getRowTransformation(normP0, 'I', index);
+      const iRow = getRowTransformation(normP0, 'I', targetIndex);
       return [...iRow].reverse();
     }
   }

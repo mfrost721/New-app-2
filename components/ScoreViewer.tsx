@@ -64,8 +64,17 @@ export default function ScoreViewer({
           {notes.map((n, idx) => (
             <div
               key={idx}
+              role="button"
+              tabIndex={0}
+              aria-label={`Note ${n.pitch} ${n.duration}`}
               onClick={() => onNoteClick && onNoteClick(idx)}
-              className="relative flex flex-col items-center cursor-pointer group hover:scale-105 transition-transform"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  if (onNoteClick) onNoteClick(idx);
+                }
+              }}
+              className="relative flex flex-col items-center cursor-pointer group hover:scale-105 transition-transform focus:outline-none"
             >
               {/* Optional Annotation Badge */}
               {n.annotation && (

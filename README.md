@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frost Music Lab — University Music Examination Preparation System
 
-## Getting Started
+An adaptive study, ear-training, theory-analysis, sight-singing, and piano-proficiency application designed specifically to prepare students to pass three university music examinations:
 
-First, run the development server:
+1. **Music Theory IV** (Set theory, 12-tone serialism, mode/scale construction, large formal analysis, 20th-century rhythm)
+2. **Aural Skills IV** (Solfege, 7th chords, 6/4 chord functions, secondary dominants, melodic/rhythmic dictation, microphone sight-singing)
+3. **Class Piano IV Proficiency** (2-octave scales & arpeggios @ 100bpm, melody harmonization, transposition, Happy Birthday project, sight-reading exam simulator)
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- **Node.js**: v18.0.0 or higher
+- **npm**: v9.0.0 or higher
+
+### Installation & Local Setup
 
 ```bash
+# Install dependencies cleanly
+npm ci
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧪 Testing & Verification
 
-## Learn More
+```bash
+# Run unit tests
+npm test
 
-To learn more about Next.js, take a look at the following resources:
+# Run type check
+npx tsc --noEmit
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Run Linter
+npm run lint
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Build production bundle
+npm run build
+```
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🛠 Features & Capabilities
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Deterministic Music Engines**: Precise pitch-class set calculations (normal order, prime form, interval-class vectors `<ic1..ic6>`), 12-tone matrix generation ($P_n, I_n, R_n, RI_n$), and scale/chord spelling.
+- **Sight-Singing Studio**: Real-time microphone audio autocorrelation pitch detection with cents deviation display.
+- **Piano Performance Lab**: Hardware Web MIDI keyboard support for real-time note input and self-certified technique gauntlets.
+- **Adaptive Spaced Repetition**: EWMA-weighted mastery scoring, response latency tracking, and "Next Best 20 Minutes" practice prescriptions.
+- **Road Mode Toggle**: Mobile-friendly streak protection that adapts practice recommendations when traveling without access to a piano keyboard.
+- **Error Analytics & Knowledge Base**: Micro-lessons linked to practice drills, error pattern logs, and full JSON data export.

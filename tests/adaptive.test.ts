@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { updateSkillMastery, calculateExamReadiness, SkillItem } from '../lib/adaptive/mastery';
 import { generatePracticePrescription } from '../lib/adaptive/practicePrescription';
+import { recordPracticeAttemptInStore } from '../lib/storage/store';
 
 describe('Adaptive Learning Engine & Mastery', () => {
   const dummySkill: SkillItem = {
@@ -66,5 +67,28 @@ describe('Adaptive Learning Engine & Mastery', () => {
 
     const rxHome = generatePracticePrescription(skills, 20, false);
     expect(rxHome.recommendations.some(r => r.category === 'Class Piano IV')).toBe(true);
+  });
+
+  it('resets streak to 1 if more than 1 day has elapsed since last practice', () => {
+    const initialStore = {
+      examDate: '2026-12-08',
+      isRoadMode: false,
+      academicStreak: 5,
+      pianoStreak: 3,
+      lastAcademicDate: '2025-01-01',
+      lastPianoDate: '2025-01-01',
+      skills: [dummySkill],
+      history: [],
+      totalMinutesStudied: 10,
+    };
+
+    const updated = recordPracticeAttemptInStore(initialStore, {
+      skillId: 'test-1',
+      isCorrect: true,
+      responseTimeMs: 2000,
+      date: new Date().toISOString(),
+    });
+
+    expect(updated.academicStreak).toBe(1);
   });
 });
