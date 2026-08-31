@@ -11,7 +11,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const pathname = usePathname();
 
   useEffect(() => {
-    setStore(loadUserStore());
+    queueMicrotask(() => {
+      setStore(loadUserStore());
+    });
   }, []);
 
   const toggleRoadMode = () => {

@@ -3,8 +3,7 @@
  * Manages user state, skills mastery, practice logs, streaks, and settings.
  */
 
-import { SkillItem, PracticeAttempt, updateSkillMastery, calculateExamReadiness, ExamReadiness } from '../adaptive/mastery';
-import { generatePracticePrescription, SessionPrescription } from '../adaptive/practicePrescription';
+import { SkillItem, PracticeAttempt, updateSkillMastery } from '../adaptive/mastery';
 
 export interface UserStoreState {
   examDate: string; // ISO date format, default 2026-12-08

@@ -24,10 +24,10 @@ export default function PitchClassClock({
       x: center + radius * Math.cos(angle),
       y: center + radius * Math.sin(angle),
     };
+  };
 
-    const handleToggle = (pc: number) => {
-      if (onTogglePc) onTogglePc(pc);
-    };
+  const handleToggle = (pc: number) => {
+    if (onTogglePc) onTogglePc(pc);
   };
 
   return (

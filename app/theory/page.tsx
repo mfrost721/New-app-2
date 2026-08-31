@@ -24,7 +24,7 @@ export default function TheoryPage() {
   const [matrixResult, setMatrixResult] = useState<string | null>(null);
 
   // Mode Trainer state
-  const [currentMode, setCurrentMode] = useState<ModeName>('Dorian');
+  const currentMode: ModeName = 'Dorian';
 
   const togglePc = (pc: number) => {
     setSelectedPcs(prev =>

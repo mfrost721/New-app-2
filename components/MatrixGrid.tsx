@@ -19,7 +19,6 @@ export default function MatrixGrid({
   onCellChange,
   showNotes = true,
   interactive = false,
-  highlightTransform,
 }: MatrixGridProps) {
   const solutionMatrix = generateTwelveToneMatrix(p0Row);
 

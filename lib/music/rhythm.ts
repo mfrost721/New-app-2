@@ -66,7 +66,7 @@ export function getRhythmicSyllable(beatNumber: number, position: 0 | 1 | 2 | 3,
 /**
  * Analyzes rhythmic grouping and checks if an onset falls on a syncopated position.
  */
-export function isSyncopated(subdivisionIndex: number, subdivisionTotal: number): boolean {
+export function isSyncopated(subdivisionIndex: number): boolean {
   // Syncopated if onset is off-beat (e.g. position 1 or 3 in 4-subdivision)
   const pos = subdivisionIndex % 4;
   return pos === 1 || pos === 3;

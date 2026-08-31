@@ -11,7 +11,9 @@ export default function HomeDashboard() {
   const [store, setStore] = useState<UserStoreState | null>(null);
 
   useEffect(() => {
-    setStore(loadUserStore());
+    queueMicrotask(() => {
+      setStore(loadUserStore());
+    });
   }, []);
 
   if (!store) return <div className="p-8 text-center text-slate-400">Loading Frost Music Lab...</div>;
