@@ -70,7 +70,8 @@ export function spellChord(rootNote: string, quality: TriadQuality | SeventhQual
   const rootPositionPcs = intervals.map(i => (rootPc + i) % 12);
   const bassPc = rootPositionPcs[inversion % rootPositionPcs.length];
 
-  const preferFlat = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'].some(k => rootNote.toUpperCase().includes(k));
+  const rootUpper = rootNote.toUpperCase();
+  const preferFlat = ['F', 'BB', 'EB', 'AB', 'DB', 'GB'].some(k => rootUpper.includes(k));
   const bassNote = pitchClassToNote(bassPc, preferFlat);
 
   return {
