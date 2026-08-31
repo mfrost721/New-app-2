@@ -26,6 +26,16 @@ const DEGREE_MAP: Record<number, string> = {
   6: '♯4', 7: '5', 8: '♭6', 9: '6', 10: '♭7', 11: '7'
 };
 
+const WHITE_KEY_OFFSETS: Record<number, number> = {
+  0: 0, 1: 1, 2: 1, 3: 2, 4: 2, 5: 3, 6: 4, 7: 4, 8: 5, 9: 5, 10: 6, 11: 6,
+};
+
+const getWhiteKeyIndex = (midi: number) => {
+  const octave = Math.floor(midi / 12);
+  const pc = ((midi % 12) + 12) % 12;
+  return octave * 7 + (WHITE_KEY_OFFSETS[pc] ?? 0);
+};
+
 export default function KeyboardVisualizer({
   startMidi = 60,
   numKeys = 25,
@@ -37,6 +47,8 @@ export default function KeyboardVisualizer({
   const [pressedMidis, setPressedMidis] = useState<number[]>([]);
 
   useEffect(() => {
+    void midiController.init();
+
     // Listen to real MIDI hardware keyboard inputs
     const cleanup = midiController.onNote((msg) => {
       if (msg.type === 'noteon') {
@@ -79,19 +91,26 @@ export default function KeyboardVisualizer({
         {keys.map((midi) => {
           const isBlack = isBlackKey(midi);
           const isActive = activeMidis.includes(midi) || pressedMidis.includes(midi);
+          const noteName = pitchClassToNote(((midi % 12) + 12) % 12);
+          const octave = Math.floor(midi / 12) - 1;
+          const keyAriaLabel = `Piano key ${noteName}${octave} (MIDI ${midi})`;
 
           if (isBlack) {
+            const whiteKeyOffset = getWhiteKeyIndex(midi) - getWhiteKeyIndex(startMidi);
             return (
               <button
                 key={midi}
+                type="button"
                 onClick={() => handleKeyClick(midi)}
-                className={`absolute z-10 w-7 h-20 -ml-3.5 rounded-b-md transition-all shadow-md flex items-end justify-center pb-1 text-[10px] font-bold ${
+                aria-label={keyAriaLabel}
+                aria-pressed={isActive}
+                className={`absolute z-10 w-7 h-20 -ml-3.5 rounded-b-md transition-all shadow-md flex items-end justify-center pb-1 text-[10px] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:z-20 ${
                   isActive
                     ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-300 scale-95'
                     : 'bg-slate-950 text-slate-300 hover:bg-slate-800 border-x border-b border-slate-700'
                 }`}
                 style={{
-                  left: `${((midi - startMidi) * 2.2)}rem`
+                  left: `${whiteKeyOffset * 2.25 + 0.5}rem`
                 }}
               >
                 {getLabel(midi)}
@@ -102,8 +121,11 @@ export default function KeyboardVisualizer({
           return (
             <button
               key={midi}
+              type="button"
               onClick={() => handleKeyClick(midi)}
-              className={`w-9 h-32 rounded-b-lg border border-slate-300 transition-all flex items-end justify-center pb-2 text-xs font-bold shadow-sm ${
+              aria-label={keyAriaLabel}
+              aria-pressed={isActive}
+              className={`w-9 h-32 rounded-b-lg border border-slate-300 transition-all flex items-end justify-center pb-2 text-xs font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:z-20 ${
                 isActive
                   ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-500 scale-95'
                   : 'bg-slate-100 text-slate-800 hover:bg-white active:bg-slate-200'

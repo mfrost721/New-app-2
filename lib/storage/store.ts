@@ -20,6 +20,20 @@ export interface UserStoreState {
 
 const STORAGE_KEY = 'frost_music_lab_user_store_v1';
 
+function normalizeDateOnly(dateStr: string | null): string | null {
+  if (!dateStr) return null;
+  return dateStr.split('T')[0];
+}
+
+function getDayDifference(previousDate: string | null, currentDate: string): number | null {
+  const prev = normalizeDateOnly(previousDate);
+  if (!prev) return null;
+  const previousTs = new Date(`${prev}T00:00:00Z`).getTime();
+  const currentTs = new Date(`${currentDate}T00:00:00Z`).getTime();
+  if (!Number.isFinite(previousTs) || !Number.isFinite(currentTs)) return null;
+  return Math.floor((currentTs - previousTs) / (1000 * 60 * 60 * 24));
+}
+
 export const INITIAL_SKILLS: SkillItem[] = [
   // Theory IV
   { id: 't1', category: 'Theory IV', topic: 'Pitch-Class Sets & Prime Form', mastery: 55, totalAttempts: 10, correctAttempts: 5, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
@@ -98,11 +112,21 @@ export function recordPracticeAttemptInStore(
   let pianoStreak = currentState.pianoStreak;
 
   if (currentState.lastAcademicDate !== today) {
-    academicStreak += 1;
+    const gap = getDayDifference(currentState.lastAcademicDate, today);
+    if (gap === 1) {
+      academicStreak += 1;
+    } else if (gap === null || gap > 1) {
+      academicStreak = 1;
+    }
   }
 
   if (targetSkill.category === 'Class Piano IV' && currentState.lastPianoDate !== today) {
-    pianoStreak += 1;
+    const gap = getDayDifference(currentState.lastPianoDate, today);
+    if (gap === 1) {
+      pianoStreak += 1;
+    } else if (gap === null || gap > 1) {
+      pianoStreak = 1;
+    }
   }
 
   const updatedState: UserStoreState = {

@@ -55,14 +55,15 @@ export function getRowTransformation(p0Row: number[], form: RowForm, index: numb
   const normP0 = p0Row.map(n => ((n % 12) + 12) % 12);
   const matrix = generateTwelveToneMatrix(normP0);
   const p0First = normP0[0];
+  const normalizedIndex = ((index % 12) + 12) % 12;
 
   switch (form) {
     case 'P': {
       // Find row in matrix starting with note (p0First + index) % 12
-      const targetFirstNote = (p0First + index) % 12;
+      const targetFirstNote = (p0First + normalizedIndex) % 12;
       const rowIdx = matrix.findIndex(r => r[0] === targetFirstNote);
       if (rowIdx !== -1) return matrix[rowIdx];
-      return normP0.map(n => (n + index) % 12);
+      return normP0.map(n => (n + normalizedIndex) % 12);
     }
     case 'R': {
       const pRow = getRowTransformation(normP0, 'P', index);
@@ -71,7 +72,7 @@ export function getRowTransformation(p0Row: number[], form: RowForm, index: numb
     case 'I': {
       // Find row in matrix whose top element (col index) corresponds to target Inversion
       // I_n starts at (p0First + index) % 12 at col header
-      const targetFirstNote = (index) % 12;
+      const targetFirstNote = (p0First + normalizedIndex) % 12;
       // Inversion col is column in matrix: matrix[0][col]
       // P_0[0] is matrix[0][0]. Inversion starting at index:
       // Note I_n first note = index
@@ -79,7 +80,7 @@ export function getRowTransformation(p0Row: number[], form: RowForm, index: numb
       if (colIdx !== -1) {
         return matrix.map(row => row[colIdx]);
       }
-      return normP0.map(n => ((index * 2 - n) % 12 + 12) % 12);
+      return normP0.map(n => ((targetFirstNote * 2 - n) % 12 + 12) % 12);
     }
     case 'RI': {
       const iRow = getRowTransformation(normP0, 'I', index);

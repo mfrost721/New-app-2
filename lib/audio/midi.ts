@@ -11,9 +11,24 @@ export interface MIDIMessage {
 
 type MIDICallback = (msg: MIDIMessage) => void;
 
+interface WebMidiEvent {
+  data: Uint8Array | number[];
+}
+
+interface WebMidiPort {
+  onmidimessage: ((event: WebMidiEvent) => void) | null;
+}
+
+interface WebMidiAccess {
+  inputs: {
+    values: () => IterableIterator<WebMidiPort>;
+  };
+}
+
 class MIDIController {
   private callbacks: MIDICallback[] = [];
-  private midiAccess: any = null;
+  private midiAccess: WebMidiAccess | null = null;
+  private boundHandler: ((event: WebMidiEvent) => void) | null = null;
   public isSupported = false;
 
   constructor() {
@@ -25,10 +40,16 @@ class MIDIController {
   public async init(): Promise<boolean> {
     if (!this.isSupported) return false;
     try {
-      this.midiAccess = await (navigator as any).requestMIDIAccess();
+      if (!this.boundHandler) {
+        this.boundHandler = this.handleMIDIMessage.bind(this);
+      }
+      if (!this.midiAccess) {
+        const nav = navigator as unknown as { requestMIDIAccess: () => Promise<WebMidiAccess> };
+        this.midiAccess = await nav.requestMIDIAccess();
+      }
       const inputs = this.midiAccess.inputs.values();
       for (const input of inputs) {
-        input.onmidimessage = this.handleMIDIMessage.bind(this);
+        input.onmidimessage = this.boundHandler;
       }
       return true;
     } catch {
@@ -40,10 +61,21 @@ class MIDIController {
     this.callbacks.push(callback);
     return () => {
       this.callbacks = this.callbacks.filter(cb => cb !== callback);
+      if (this.callbacks.length === 0) {
+        this.cleanup();
+      }
     };
   }
 
-  private handleMIDIMessage(event: any): void {
+  public cleanup(): void {
+    if (!this.midiAccess) return;
+    const inputs = this.midiAccess.inputs.values();
+    for (const input of inputs) {
+      input.onmidimessage = null;
+    }
+  }
+
+  private handleMIDIMessage(event: WebMidiEvent): void {
     const [status, note, velocity] = event.data;
     const command = status >> 4;
 

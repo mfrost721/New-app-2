@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { loadUserStore, UserStoreState } from '@/lib/storage/store';
 import { calculateExamReadiness } from '@/lib/adaptive/mastery';
 import { generatePracticePrescription } from '@/lib/adaptive/practicePrescription';
-import { ShieldAlert, Zap, Clock, Flame, Play, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Zap, Clock, CheckCircle2 } from 'lucide-react';
 
 export default function HomeDashboard() {
   const [store, setStore] = useState<UserStoreState | null>(null);
@@ -19,10 +19,6 @@ export default function HomeDashboard() {
   const theoryReadiness = calculateExamReadiness(store.skills, 'Theory IV');
   const auralReadiness = calculateExamReadiness(store.skills, 'Aural Skills IV');
   const pianoReadiness = calculateExamReadiness(store.skills, 'Class Piano IV');
-
-  const overallMastery = Math.round(
-    (theoryReadiness.masteryPercentage + auralReadiness.masteryPercentage + pianoReadiness.masteryPercentage) / 3
-  );
 
   const prescription = generatePracticePrescription(store.skills, 20, store.isRoadMode);
 

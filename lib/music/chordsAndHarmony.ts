@@ -58,6 +58,8 @@ export const SEVENTH_INTERVALS: Record<SeventhQuality, number[]> = {
   'minor-major': [0, 3, 7, 11],
 };
 
+const FLAT_ROOTS = new Set(['F', 'BB', 'EB', 'AB', 'DB', 'GB', 'CB']);
+
 /**
  * Spells a triad or 7th chord given root, quality, and inversion.
  */
@@ -70,7 +72,8 @@ export function spellChord(rootNote: string, quality: TriadQuality | SeventhQual
   const rootPositionPcs = intervals.map(i => (rootPc + i) % 12);
   const bassPc = rootPositionPcs[inversion % rootPositionPcs.length];
 
-  const preferFlat = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'].some(k => rootNote.toUpperCase().includes(k));
+  const rootToken = rootNote.trim().toUpperCase().replace(/\s+/g, '');
+  const preferFlat = FLAT_ROOTS.has(rootToken) || /[A-G]b/.test(rootNote);
   const bassNote = pitchClassToNote(bassPc, preferFlat);
 
   return {

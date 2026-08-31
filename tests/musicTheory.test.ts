@@ -84,6 +84,17 @@ describe('Twelve-Tone Serialism Engine', () => {
     expect(r0Result).toEqual([...p0].reverse());
   });
 
+  it('handles nonzero P0 for inversion and retrograde-inversion indices', () => {
+    const nonZeroP0 = [5, 4, 0, 1, 7, 6, 2, 3, 9, 8, 10, 11];
+    const i7 = getRowTransformation(nonZeroP0, 'I', 7);
+    const ri7 = getRowTransformation(nonZeroP0, 'RI', 7);
+    const r7 = getRowTransformation(nonZeroP0, 'R', 7);
+
+    expect(i7[0]).toBe((nonZeroP0[0] + 7) % 12);
+    expect(ri7).toEqual([...i7].reverse());
+    expect(r7).toEqual([...getRowTransformation(nonZeroP0, 'P', 7)].reverse());
+  });
+
   it('identifies row transformations correctly', () => {
     const r0 = [...p0].reverse();
     const found = identifyRowTransformation(p0, r0);
@@ -103,6 +114,12 @@ describe('Scales and Modes Engine', () => {
     expect(identified?.tonicNote).toBe('D');
     expect(identified?.mode).toBe('Dorian');
   });
+
+  it('spells flat keys with flat note names', () => {
+    const bbMajor = buildScale('Bb', 'Ionian');
+    expect(bbMajor.noteNames).toContain('Bb');
+    expect(bbMajor.noteNames).toContain('Eb');
+  });
 });
 
 describe('Chords and Harmony Engine', () => {
@@ -113,6 +130,9 @@ describe('Chords and Harmony Engine', () => {
 
     const gDom7Inversion1 = spellChord('G', 'major-minor', 1); // 1st inversion G7: B in bass
     expect(gDom7Inversion1.bassNote).toBe('B');
+
+    const bbMinor = spellChord('Bb', 'minor', 0);
+    expect(bbMinor.root).toBe('Bb');
   });
 
   it('generates secondary dominants', () => {

@@ -1,25 +1,30 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import KeyboardVisualizer from '@/components/KeyboardVisualizer';
+import { useEffect, useRef, useState } from 'react';
 import ScoreViewer from '@/components/ScoreViewer';
 import { soundEngine } from '@/lib/audio/soundEngine';
 import { autoCorrelate, PitchAnalysisResult } from '@/lib/audio/pitchDetection';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
-import { Mic, Volume2, Play, Check, RefreshCw, Activity, Music, Radio } from 'lucide-react';
+import { Mic, Volume2, Check } from 'lucide-react';
 
 export default function AuralPage() {
   const [activeTab, setActiveTab] = useState<'noteInKey' | 'chordsAnd64' | 'dictation' | 'sightSinging'>('noteInKey');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Note-in-key ladder state
-  const [targetDegree, setTargetDegree] = useState<number>(4); // Mi (3rd degree)
-  const [playedCadence, setPlayedCadence] = useState(false);
+  const targetDegree = 4; // Mi (3rd degree)
 
   // Sight singing microphone pitch detection state
   const [isRecording, setIsRecording] = useState(false);
   const [pitchResult, setPitchResult] = useState<PitchAnalysisResult | null>(null);
   const [singingScore, setSingingScore] = useState<{ pitch: number; rhythm: number; total: number } | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const validPitchFramesRef = useRef(0);
+  const analyzedFramesRef = useRef(0);
+  const absoluteCentsRef = useRef<number[]>([]);
 
   // Cadence playback for Note-in-Key
   const playCadence = () => {
@@ -30,59 +35,112 @@ export default function AuralPage() {
     setTimeout(() => soundEngine.playChord([60, 64, 67], 0.8), 1800); // C
     setTimeout(() => {
       soundEngine.playNote(60 + targetDegree, 1.2);
-      setPlayedCadence(true);
     }, 2600);
   };
 
+  const cleanupMicResources = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      void audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      cleanupMicResources();
+    };
+  }, []);
+
+  const recordAttempt = (skillId: string, isCorrect: boolean, responseTimeMs: number) => {
+    const store = loadUserStore();
+    recordPracticeAttemptInStore(store, {
+      skillId,
+      isCorrect,
+      confidenceRating: isCorrect ? 4 : 2,
+      responseTimeMs,
+      date: new Date().toISOString(),
+    });
+    setFeedback(isCorrect ? 'Correct! Mastery updated.' : 'Logged as incorrect attempt. Keep practicing.');
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
   const handleMicStart = async () => {
+    if (isRecording) return;
     try {
+      cleanupMicResources();
+      setPitchResult(null);
+      setSingingScore(null);
+      validPitchFramesRef.current = 0;
+      analyzedFramesRef.current = 0;
+      absoluteCentsRef.current = [];
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 2048;
       source.connect(analyser);
+      streamRef.current = stream;
+      audioContextRef.current = audioCtx;
 
       setIsRecording(true);
       const buffer = new Float32Array(analyser.fftSize);
 
-      const interval = setInterval(() => {
+      intervalRef.current = setInterval(() => {
+        analyzedFramesRef.current += 1;
         analyser.getFloatTimeDomainData(buffer);
         const res = autoCorrelate(buffer, audioCtx.sampleRate);
         if (res) {
+          validPitchFramesRef.current += 1;
+          absoluteCentsRef.current.push(Math.abs(res.centsDeviation));
           setPitchResult(res);
         }
       }, 100);
 
-      setTimeout(() => {
-        clearInterval(interval);
-        stream.getTracks().forEach(t => t.stop());
+      timeoutRef.current = setTimeout(() => {
+        cleanupMicResources();
         setIsRecording(false);
-        setSingingScore({ pitch: 94, rhythm: 89, total: 92 });
+
+        const analyzedFrames = analyzedFramesRef.current;
+        const validFrames = validPitchFramesRef.current;
+        const avgAbsCents = absoluteCentsRef.current.length
+          ? absoluteCentsRef.current.reduce((sum, n) => sum + n, 0) / absoluteCentsRef.current.length
+          : 100;
+        const pitchScore = Math.max(0, Math.min(100, Math.round(100 - avgAbsCents * 2.5)));
+        const rhythmScore = analyzedFrames > 0
+          ? Math.max(0, Math.min(100, Math.round((validFrames / analyzedFrames) * 100)))
+          : 0;
+        const total = Math.round((pitchScore * 0.7) + (rhythmScore * 0.3));
+        setSingingScore({ pitch: pitchScore, rhythm: rhythmScore, total });
+
+        const isCorrect = total >= 70;
         recordPracticeAttemptInStore(loadUserStore(), {
           skillId: 'a7',
-          isCorrect: true,
-          confidenceRating: 4,
+          isCorrect,
+          confidenceRating: isCorrect ? 4 : 2,
           responseTimeMs: 5000,
           date: new Date().toISOString(),
         });
+        setFeedback(isCorrect ? 'Sight-singing passed and recorded.' : 'Sight-singing attempt recorded as incomplete.');
+        setTimeout(() => setFeedback(null), 3000);
       }, 5000);
-    } catch (err) {
+    } catch {
+      cleanupMicResources();
+      setIsRecording(false);
       alert('Microphone access is required for Sight-Singing Studio.');
     }
-  };
-
-  const handleRecordSuccess = (skillId: string) => {
-    const store = loadUserStore();
-    recordPracticeAttemptInStore(store, {
-      skillId,
-      isCorrect: true,
-      confidenceRating: 4,
-      responseTimeMs: 2500,
-      date: new Date().toISOString(),
-    });
-    setFeedback('Correct! Mastery updated (+6 pts).');
-    setTimeout(() => setFeedback(null), 3000);
   };
 
   return (
@@ -166,9 +224,9 @@ export default function AuralPage() {
                 key={item.degree}
                 onClick={() => {
                   if (item.degree === targetDegree) {
-                    handleRecordSuccess('a1');
+                    recordAttempt('a1', true, 2500);
                   } else {
-                    setFeedback(`Incorrect. Target note was Mi.`);
+                    recordAttempt('a1', false, 2500);
                   }
                 }}
                 className="p-4 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-center text-xs font-bold text-slate-200 hover:text-amber-400 transition-all"
@@ -207,7 +265,10 @@ export default function AuralPage() {
             {['Cadential 6/4', 'Passing 6/4', 'Pedal / Neighbor 6/4'].map((func, i) => (
               <button
                 key={i}
-                onClick={() => handleRecordSuccess('a3')}
+                onClick={() => {
+                  const isCorrect = window.confirm(`Mark "${func}" as your correct identification?`);
+                  recordAttempt('a3', isCorrect, 3000);
+                }}
                 className="p-5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-center text-sm font-bold text-slate-100 hover:border-amber-400/50 transition-all"
               >
                 {func}
@@ -235,7 +296,10 @@ export default function AuralPage() {
               <p className="text-xs text-slate-400">Listen to melody and enter notes on interactive staff.</p>
             </div>
             <button
-              onClick={() => handleRecordSuccess('a6')}
+              onClick={() => {
+                const isCorrect = window.confirm('Did your submitted dictation match the target melody?');
+                recordAttempt('a6', isCorrect, 4000);
+              }}
               className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs"
             >
               Submit Dictation

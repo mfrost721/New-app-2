@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import KeyboardVisualizer from '@/components/KeyboardVisualizer';
 import ScoreViewer from '@/components/ScoreViewer';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
-import { Piano, Play, Check, Clock, Music, ArrowRight, RotateCcw } from 'lucide-react';
+import { Piano, Check, Clock, RotateCcw } from 'lucide-react';
 
 export default function PianoPage() {
   const [activeTab, setActiveTab] = useState<'technique' | 'harmonization' | 'happyBirthday' | 'sightReading'>('technique');
@@ -14,13 +14,27 @@ export default function PianoPage() {
   const keysList = ['Eb Major', 'F# Minor (Harmonic)', 'Ab Major', 'C# Minor (Melodic)', 'D Diminished 7th'];
   const [currentPromptIdx, setCurrentPromptIdx] = useState<number>(0);
   const [previewCountdown, setPreviewCountdown] = useState<number | null>(null);
+  const [techniqueChecklist, setTechniqueChecklist] = useState({
+    handsTogether: false,
+    fingering: false,
+    tempo: false,
+    continuousFlow: false,
+  });
+  const previewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startPreviewTimer = () => {
+    if (previewIntervalRef.current) {
+      clearInterval(previewIntervalRef.current);
+      previewIntervalRef.current = null;
+    }
     setPreviewCountdown(20);
-    const interval = setInterval(() => {
+    previewIntervalRef.current = setInterval(() => {
       setPreviewCountdown(prev => {
         if (prev === null || prev <= 1) {
-          clearInterval(interval);
+          if (previewIntervalRef.current) {
+            clearInterval(previewIntervalRef.current);
+            previewIntervalRef.current = null;
+          }
           return 0;
         }
         return prev - 1;
@@ -28,16 +42,24 @@ export default function PianoPage() {
     }, 1000);
   };
 
-  const handleRecordSuccess = (skillId: string) => {
+  useEffect(() => {
+    return () => {
+      if (previewIntervalRef.current) {
+        clearInterval(previewIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const recordAttempt = (skillId: string, isCorrect: boolean, responseTimeMs: number) => {
     const store = loadUserStore();
     recordPracticeAttemptInStore(store, {
       skillId,
-      isCorrect: true,
-      confidenceRating: 5,
-      responseTimeMs: 4000,
+      isCorrect,
+      confidenceRating: isCorrect ? 5 : 2,
+      responseTimeMs,
       date: new Date().toISOString(),
     });
-    setFeedback('Attempt Certified! Mastery updated (+6 pts).');
+    setFeedback(isCorrect ? 'Attempt certified and mastery updated.' : 'Attempt logged as incomplete.');
     setTimeout(() => setFeedback(null), 3000);
   };
 
@@ -116,26 +138,49 @@ export default function PianoPage() {
             <h3 className="text-xs font-bold text-slate-300 uppercase">Self-Certification Checklist (Exam Rule)</h3>
             <div className="grid grid-cols-2 gap-2 text-xs text-slate-300">
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded accent-amber-500" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="rounded accent-amber-500"
+                  checked={techniqueChecklist.handsTogether}
+                  onChange={(e) => setTechniqueChecklist(prev => ({ ...prev, handsTogether: e.target.checked }))}
+                />
                 <span>Hands together throughout</span>
               </label>
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded accent-amber-500" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="rounded accent-amber-500"
+                  checked={techniqueChecklist.fingering}
+                  onChange={(e) => setTechniqueChecklist(prev => ({ ...prev, fingering: e.target.checked }))}
+                />
                 <span>Standard fingering maintained</span>
               </label>
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded accent-amber-500" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="rounded accent-amber-500"
+                  checked={techniqueChecklist.tempo}
+                  onChange={(e) => setTechniqueChecklist(prev => ({ ...prev, tempo: e.target.checked }))}
+                />
                 <span>Maintained tempo = 100 bpm</span>
               </label>
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded accent-amber-500" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="rounded accent-amber-500"
+                  checked={techniqueChecklist.continuousFlow}
+                  onChange={(e) => setTechniqueChecklist(prev => ({ ...prev, continuousFlow: e.target.checked }))}
+                />
                 <span>No restarts / continuous flow</span>
               </label>
             </div>
           </div>
 
           <button
-            onClick={() => handleRecordSuccess('p1')}
+            onClick={() => {
+              const isCorrect = Object.values(techniqueChecklist).every(Boolean);
+              recordAttempt('p1', isCorrect, 4000);
+            }}
             className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all"
           >
             Certify Scale & Arpeggio Performance
@@ -151,7 +196,10 @@ export default function PianoPage() {
             <h3 className="text-sm font-bold text-slate-100">Transposition Command</h3>
             <p className="text-xs text-slate-400">Now transpose the harmonization up a whole step to A Major.</p>
             <button
-              onClick={() => handleRecordSuccess('p4')}
+              onClick={() => {
+                const isCorrect = window.confirm('Did you complete the transposition correctly without stopping?');
+                recordAttempt('p4', isCorrect, 3500);
+              }}
               className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs"
             >
               Certify Transposition Performance
@@ -180,7 +228,10 @@ export default function PianoPage() {
           </div>
 
           <button
-            onClick={() => handleRecordSuccess('p5')}
+            onClick={() => {
+              const isCorrect = window.confirm('Did you play all required harmonizations correctly?');
+              recordAttempt('p5', isCorrect, 4500);
+            }}
             className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm"
           >
             Certify Happy Birthday Practice Attempt
@@ -214,7 +265,10 @@ export default function PianoPage() {
           <ScoreViewer title="Unseen Level III Sight-Reading Score Excerpt" />
 
           <button
-            onClick={() => handleRecordSuccess('p6')}
+            onClick={() => {
+              const isCorrect = window.confirm('Did you complete the sight-reading attempt with no restarts?');
+              recordAttempt('p6', isCorrect, 5000);
+            }}
             className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm"
           >
             Complete Sight-Reading Attempt

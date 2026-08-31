@@ -139,6 +139,12 @@ export const SCALE_DEFINITIONS: Record<ModeName, ScaleDefinition> = {
   }
 };
 
+const FLAT_TONICS = new Set(['F', 'BB', 'EB', 'AB', 'DB', 'GB', 'CB', 'DM', 'GM', 'CM', 'FM', 'BBM', 'EBM', 'ABM']);
+
+function normalizeTonicForSpelling(tonicNote: string): string {
+  return tonicNote.trim().toUpperCase().replace(/\s+/g, '');
+}
+
 /**
  * Builds scale pitch classes and note names given tonic note and mode name.
  */
@@ -148,7 +154,8 @@ export function buildScale(tonicNote: string, modeName: ModeName): { pitchClasse
   if (!def) throw new Error(`Unknown mode: ${modeName}`);
 
   const pitchClasses = def.intervals.map(i => (tonicPc + i) % 12);
-  const preferFlat = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Dm', 'Gm', 'Cm', 'Fm'].some(k => tonicNote.toUpperCase().includes(k));
+  const tonicToken = normalizeTonicForSpelling(tonicNote);
+  const preferFlat = FLAT_TONICS.has(tonicToken) || /[A-G]b/.test(tonicNote);
   const noteNames = pitchClasses.map(pc => pitchClassToNote(pc, preferFlat));
 
   return { pitchClasses, noteNames };

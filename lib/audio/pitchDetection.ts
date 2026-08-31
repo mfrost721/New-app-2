@@ -26,6 +26,7 @@ export function freqToMidi(freq: number): { midi: number; noteName: string; cent
  */
 export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAnalysisResult | null {
   const SIZE = buffer.length;
+  if (SIZE < 3 || !Number.isFinite(sampleRate) || sampleRate <= 0) return null;
   let rms = 0;
 
   for (let i = 0; i < SIZE; i++) {
@@ -54,18 +55,21 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
     }
   }
 
-  const buf = buffer.slice(r1, r2);
+  const buf = buffer.subarray(r1, r2);
   const newSize = buf.length;
+  if (newSize < 3) return null;
 
   const c = new Float32Array(newSize);
   for (let i = 0; i < newSize; i++) {
+    let sum = 0;
     for (let j = 0; j < newSize - i; j++) {
-      c[i] = c[i] + buf[j] * buf[j + i];
+      sum += buf[j] * buf[j + i];
     }
+    c[i] = sum;
   }
 
   let d = 0;
-  while (c[d] > c[d + 1]) d++;
+  while (d + 1 < newSize && c[d] > c[d + 1]) d++;
 
   let maxval = -1;
   let maxpos = -1;
@@ -77,16 +81,19 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
   }
 
   let T0 = maxpos;
+  if (T0 <= 0 || T0 >= newSize - 1) return null;
   const x1 = c[T0 - 1];
   const x2 = c[T0];
   const x3 = c[T0 + 1];
+  if (!Number.isFinite(x1) || !Number.isFinite(x2) || !Number.isFinite(x3)) return null;
 
   const a = (x1 + x3 - 2 * x2) / 2;
   const b = (x3 - x1) / 2;
   if (a) T0 = T0 - b / (2 * a);
+  if (!Number.isFinite(T0) || T0 <= 0) return null;
 
   const freq = sampleRate / T0;
-  if (isNaN(freq) || freq < 50 || freq > 2000) return null;
+  if (!Number.isFinite(freq) || freq < 50 || freq > 2000) return null;
 
   const { midi, noteName, cents } = freqToMidi(freq);
 
@@ -95,6 +102,6 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
     midi,
     noteName,
     centsDeviation: cents,
-    clarity: Math.min(1, Math.round((maxval / c[0]) * 100) / 100),
+    clarity: c[0] > 0 ? Math.min(1, Math.round((maxval / c[0]) * 100) / 100) : 0,
   };
 }

@@ -25,7 +25,7 @@ export default function MatrixGrid({
 
   return (
     <div className="overflow-x-auto p-4 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl select-none">
-      <div className="grid grid-cols-13 gap-1 min-w-[550px]">
+      <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-1 min-w-[550px]">
         {/* Top-left empty corner cell */}
         <div className="w-10 h-10 flex items-center justify-center font-bold text-xs text-amber-500 bg-slate-950 rounded border border-slate-800">
           P \ I
@@ -77,6 +77,7 @@ export default function MatrixGrid({
                         type="number"
                         min={0}
                         max={11}
+                        aria-label={`Matrix cell row ${rIdx + 1} column ${cIdx + 1}`}
                         value={userVal ?? ''}
                         onChange={(e) => {
                           const val = parseInt(e.target.value, 10);

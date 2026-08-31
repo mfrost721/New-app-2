@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import PitchClassClock from '@/components/PitchClassClock';
 import MatrixGrid from '@/components/MatrixGrid';
 import ScoreViewer from '@/components/ScoreViewer';
 import KeyboardVisualizer from '@/components/KeyboardVisualizer';
 import { getNormalOrder, getPrimeForm, getIntervalVector, formatIntervalVector } from '@/lib/music/pitchClass';
-import { generateTwelveToneMatrix } from '@/lib/music/twelveTone';
+import { getRowTransformation } from '@/lib/music/twelveTone';
 import { buildScale, SCALE_DEFINITIONS, ModeName } from '@/lib/music/scalesAndModes';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
-import { Brain, Check, X, Flame, Sparkles, Clock } from 'lucide-react';
+import { Brain, Check, Clock } from 'lucide-react';
 
 export default function TheoryPage() {
   const [activeTab, setActiveTab] = useState<'setTheory' | 'matrixSpeedRun' | 'modes' | 'scoreAnalysis' | 'mockExam'>('setTheory');
@@ -19,14 +19,12 @@ export default function TheoryPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Matrix Speed Run state
-  const sampleRow = [0, 11, 7, 8, 2, 1, 9, 10, 4, 3, 5, 6];
-  const [speedRunTime, setSpeedRunTime] = useState<number>(0);
+  const sampleRow = [5, 4, 0, 1, 7, 6, 2, 3, 9, 8, 10, 11];
   const [userAnswer, setUserAnswer] = useState<string>('');
   const [matrixResult, setMatrixResult] = useState<string | null>(null);
 
   // Mode Trainer state
   const [currentMode, setCurrentMode] = useState<ModeName>('Dorian');
-  const [selectedModeAnswer, setSelectedModeAnswer] = useState<string>('');
 
   const togglePc = (pc: number) => {
     setSelectedPcs(prev =>
@@ -38,16 +36,16 @@ export default function TheoryPage() {
   const currentPrime = getPrimeForm(selectedPcs);
   const currentVector = getIntervalVector(selectedPcs);
 
-  const handleRecordSuccess = (skillId: string) => {
+  const recordAttempt = (skillId: string, isCorrect: boolean, responseTimeMs: number) => {
     const store = loadUserStore();
     recordPracticeAttemptInStore(store, {
       skillId,
-      isCorrect: true,
-      confidenceRating: 4,
-      responseTimeMs: 3000,
+      isCorrect,
+      confidenceRating: isCorrect ? 4 : 2,
+      responseTimeMs,
       date: new Date().toISOString(),
     });
-    setFeedback('Success! Mastery updated (+6 pts).');
+    setFeedback(isCorrect ? 'Correct! Mastery updated.' : 'Attempt logged as incorrect.');
     setTimeout(() => setFeedback(null), 3000);
   };
 
@@ -135,7 +133,10 @@ export default function TheoryPage() {
             </div>
 
             <button
-              onClick={() => handleRecordSuccess('t1')}
+              onClick={() => {
+                const isCorrect = window.confirm('Log this set-theory attempt as correct?');
+                recordAttempt('t1', isCorrect, 3000);
+              }}
               className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all"
             >
               Log Set Calculation Practice
@@ -150,7 +151,7 @@ export default function TheoryPage() {
           <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 flex justify-between items-center">
             <div>
               <h2 className="text-base font-bold text-slate-100">Twelve-Tone Matrix Challenge</h2>
-              <p className="text-xs text-slate-400">Find the requested row transformation for P0 = [0, 11, 7, 8, 2, 1, 9, 10, 4, 3, 5, 6]</p>
+              <p className="text-xs text-slate-400">Find the requested row transformation for P0 = [5, 4, 0, 1, 7, 6, 2, 3, 9, 8, 10, 11]</p>
             </div>
             <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold rounded-lg flex items-center space-x-1">
               <Clock className="w-3.5 h-3.5" />
@@ -170,11 +171,19 @@ export default function TheoryPage() {
             />
             <button
               onClick={() => {
-                if (userAnswer === '7' || userAnswer === 'G') {
-                  setMatrixResult('Correct! I7 begins on pitch class 7 (G).');
-                  handleRecordSuccess('t3');
+                const expectedPc = getRowTransformation(sampleRow, 'I', 7)[0];
+                const submittedValue = userAnswer.trim().toUpperCase();
+                const parsedPc = Number.parseInt(submittedValue, 10);
+                const expectedNames = ['C', 'DB', 'D', 'EB', 'E', 'F', 'GB', 'G', 'AB', 'A', 'BB', 'B'];
+                const isCorrect = (Number.isInteger(parsedPc) && ((parsedPc % 12) + 12) % 12 === expectedPc)
+                  || submittedValue === expectedNames[expectedPc];
+
+                if (isCorrect) {
+                  setMatrixResult(`Correct! I7 begins on pitch class ${expectedPc}.`);
+                  recordAttempt('t3', true, 2500);
                 } else {
-                  setMatrixResult('Incorrect. I7 starts on index 7.');
+                  setMatrixResult(`Incorrect. I7 starts on pitch class ${expectedPc}.`);
+                  recordAttempt('t3', false, 2500);
                 }
               }}
               className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all"
@@ -212,9 +221,10 @@ export default function TheoryPage() {
                   onClick={() => {
                     if (mode === currentMode) {
                       setFeedback(`Correct! Scale is ${mode}.`);
-                      handleRecordSuccess('t4');
+                      recordAttempt('t4', true, 2500);
                     } else {
                       setFeedback(`Incorrect. Scale is ${currentMode}.`);
+                      recordAttempt('t4', false, 2500);
                     }
                   }}
                   className={`p-3 rounded-xl border text-xs font-bold transition-all ${
@@ -248,7 +258,10 @@ export default function TheoryPage() {
               Identify the harmonic structure present in Measure 1.
             </p>
             <button
-              onClick={() => handleRecordSuccess('t5')}
+              onClick={() => {
+                const isCorrect = window.confirm('Did your analysis answer match the excerpt prompt?');
+                recordAttempt('t5', isCorrect, 3500);
+              }}
               className="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl text-xs"
             >
               Confirm Analysis (Octatonic)
