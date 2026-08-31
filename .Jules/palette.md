@@ -1,0 +1,3 @@
+## 2026-08-31 - Accessibility for Interactive Piano Keyboard Components
+**Learning:** Interactive audio visualizers like piano keyboard components render individual key buttons that need specific `aria-label` attributes containing complete pitch and octave/MIDI context (e.g. `Piano key C4 (MIDI 60)`), along with `aria-pressed` states and `focus-visible` ring indicators so keyboard and screen reader users can perceive and interact with key states effectively.
+**Action:** When building interactive musical components, always assign full pitch/octave metadata in `aria-label`, reflect active state in `aria-pressed`, and ensure custom z-index/ring handling on `focus-visible`.

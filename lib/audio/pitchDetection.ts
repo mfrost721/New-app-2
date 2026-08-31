@@ -70,6 +70,8 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
     }
   }
 
+  if (newSize < 3) return null;
+
   let d = 0;
   while (d < newSize - 1 && c[d] > c[d + 1]) {
     d++;

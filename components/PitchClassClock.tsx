@@ -26,6 +26,10 @@ export default function PitchClassClock({
     };
   };
 
+  const handleToggle = (pc: number) => {
+    if (onTogglePc) onTogglePc(pc);
+  };
+
   return (
     <div className="flex flex-col items-center justify-center p-4 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
       <svg width={300} height={300} className="select-none">
@@ -71,15 +75,15 @@ export default function PitchClassClock({
               key={pc}
               role="button"
               tabIndex={0}
-              aria-label={`Pitch class ${pc} (${noteName})`}
-              onClick={() => onTogglePc && onTogglePc(pc)}
+              aria-label={`Toggle pitch class ${pc}${showNoteNames ? ` (${noteName})` : ''}`}
+              onClick={() => handleToggle(pc)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  if (onTogglePc) onTogglePc(pc);
+                  handleToggle(pc);
                 }
               }}
-              className="cursor-pointer transition-transform duration-150 hover:scale-110 origin-center focus:outline-none"
+              className="cursor-pointer transition-transform duration-150 hover:scale-110 origin-center"
               style={{ transformOrigin: `${x}px ${y}px` }}
             >
               <circle

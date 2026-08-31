@@ -75,7 +75,6 @@ export function spellChord(rootNote: string, quality: TriadQuality | SeventhQual
   const isFlatRoot = !isSharpRoot && ['F', 'BB', 'EB', 'AB', 'DB', 'GB', 'CB'].some(k => cleanRoot.startsWith(k));
   const isMinorOrDimOrFlat7 = ['minor', 'diminished', 'minor-minor', 'half-diminished', 'fully-diminished', 'major-minor'].includes(quality);
   const preferFlat = isFlatRoot || isMinorOrDimOrFlat7;
-
   const bassNote = pitchClassToNote(bassPc, preferFlat);
 
   return {

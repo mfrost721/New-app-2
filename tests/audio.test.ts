@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { freqToMidi, autoCorrelate } from '../lib/audio/pitchDetection';
+import { autoCorrelate, freqToMidi } from '../lib/audio/pitchDetection';
 import { soundEngine } from '../lib/audio/soundEngine';
 
 describe('Audio Engine Utilities', () => {

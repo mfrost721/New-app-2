@@ -77,6 +77,7 @@ export default function MatrixGrid({
                         type="number"
                         min={0}
                         max={11}
+                        aria-label={`Matrix cell row ${rIdx + 1} column ${cIdx + 1}`}
                         value={userVal ?? ''}
                         onChange={(e) => {
                           const val = parseInt(e.target.value, 10);

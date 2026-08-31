@@ -49,7 +49,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           <button
             type="button"
             onClick={toggleRoadMode}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+            aria-label={`Toggle practice mode, currently ${store?.isRoadMode ? 'Road Mode' : 'Home Mode'}`}
+            aria-pressed={!!store?.isRoadMode}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
               store?.isRoadMode
                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md ring-2 ring-amber-400/30'
                 : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
