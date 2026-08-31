@@ -55,9 +55,9 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
   }
 
   // ⚡ BOLT OPTIMIZATION:
-  // 1. Use .subarray() instead of .slice() to avoid heap allocation & GC overhead per audio frame.
+  // 1. Use .subarray() instead of .slice() to eliminate redundant intermediate Float32Array buffer copy allocations.
   // 2. Accumulate inner-product loop into scalar local variable `sum` to eliminate repeated typed array property accesses.
-  // Expected impact: ~2-3x speedup of auto-correlation and 0 byte heap allocations per frame.
+  // Expected impact: Faster auto-correlation computation and reduced garbage collection pressure.
   const buf = buffer.subarray(r1, r2);
   const newSize = buf.length;
 
