@@ -6,9 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "dependencies": {
     "lucide-react": "^1.38.0",

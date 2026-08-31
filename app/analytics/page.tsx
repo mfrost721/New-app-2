@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { loadUserStore, UserStoreState } from '@/lib/storage/store';
-import { BarChart3, Download, AlertTriangle } from 'lucide-react';
+import { BarChart3, Download, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const [store, setStore] = useState<UserStoreState | null>(null);

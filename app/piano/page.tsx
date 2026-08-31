@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import KeyboardVisualizer from '@/components/KeyboardVisualizer';
 import ScoreViewer from '@/components/ScoreViewer';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
-import { Piano, Check, Clock, RotateCcw } from 'lucide-react';
+import { Piano, Play, Check, Clock, Music, ArrowRight, RotateCcw } from 'lucide-react';
 
 export default function PianoPage() {
   const [activeTab, setActiveTab] = useState<'technique' | 'harmonization' | 'happyBirthday' | 'sightReading'>('technique');

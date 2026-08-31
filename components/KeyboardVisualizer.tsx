@@ -37,6 +37,9 @@ export default function KeyboardVisualizer({
   const [pressedMidis, setPressedMidis] = useState<number[]>([]);
 
   useEffect(() => {
+    // Initialize Web MIDI access
+    midiController.init();
+
     // Listen to real MIDI hardware keyboard inputs
     const cleanup = midiController.onNote((msg) => {
       if (msg.type === 'noteon') {
@@ -83,8 +86,10 @@ export default function KeyboardVisualizer({
           if (isBlack) {
             return (
               <button
+                type="button"
                 key={midi}
                 onClick={() => handleKeyClick(midi)}
+                aria-label={`Piano Key ${getLabel(midi)}`}
                 className={`absolute z-10 w-7 h-20 -ml-3.5 rounded-b-md transition-all shadow-md flex items-end justify-center pb-1 text-[10px] font-bold ${
                   isActive
                     ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-300 scale-95'
@@ -101,8 +106,10 @@ export default function KeyboardVisualizer({
 
           return (
             <button
+              type="button"
               key={midi}
               onClick={() => handleKeyClick(midi)}
+              aria-label={`Piano Key ${getLabel(midi)}`}
               className={`w-9 h-32 rounded-b-lg border border-slate-300 transition-all flex items-end justify-center pb-2 text-xs font-bold shadow-sm ${
                 isActive
                   ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-500 scale-95'

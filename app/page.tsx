@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { loadUserStore, UserStoreState } from '@/lib/storage/store';
 import { calculateExamReadiness } from '@/lib/adaptive/mastery';
 import { generatePracticePrescription } from '@/lib/adaptive/practicePrescription';
-import { Zap, Clock, CheckCircle2 } from 'lucide-react';
+import { ShieldAlert, Zap, Clock, Flame, Play, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export default function HomeDashboard() {
   const [store, setStore] = useState<UserStoreState | null>(null);
 
   useEffect(() => {
-    setStore(loadUserStore());
+    const loaded = loadUserStore();
+    setStore(loaded);
   }, []);
 
   if (!store) return <div className="p-8 text-center text-slate-400">Loading Frost Music Lab...</div>;

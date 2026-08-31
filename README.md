@@ -1,60 +1,56 @@
-# Frost Music Lab
+# Frost Music Lab — University Music Examination Preparation System
 
-An adaptive music study application for **Music Theory IV**, **Aural Skills IV**, and **Class Piano IV Proficiency**. Frost Music Lab combines ear training, set theory analysis, 12-tone matrix speed runs, sight-singing with live pitch detection, and a Web Audio piano synthesizer into a single integrated exam-preparation platform.
+An adaptive study, ear-training, theory-analysis, sight-singing, and piano-proficiency application designed specifically to prepare students to pass three university music examinations:
 
-## Features
+1. **Music Theory IV** (Set theory, 12-tone serialism, mode/scale construction, large formal analysis, 20th-century rhythm)
+2. **Aural Skills IV** (Solfege, 7th chords, 6/4 chord functions, secondary dominants, melodic/rhythmic dictation, microphone sight-singing)
+3. **Class Piano IV Proficiency** (2-octave scales & arpeggios @ 100bpm, melody harmonization, transposition, Happy Birthday project, sight-reading exam simulator)
 
-- **Music Theory** — Deterministic set theory (prime form, interval vector, Z-relation), 12-tone matrix generation, scale/mode builder, chord harmony analysis
-- **Aural Skills** — Autocorrelation microphone pitch detection for sight-singing, interval and chord identification drills
-- **Piano Proficiency** — Web Audio synthesizer with Web MIDI input support, technique exercises
-- **Spaced Repetition Engine** — Adaptive mastery tracking, Home/Road study modes
-- **Mock Exam Analytics** — Comprehensive performance dashboard with streak tracking
-- **Knowledge Base** — Reference library for music theory concepts
+---
 
-## Getting Started
+## 🚀 Getting Started
 
-Install dependencies:
+### Prerequisites
+- **Node.js**: v18.0.0 or higher
+- **npm**: v9.0.0 or higher
 
-```bash
-npm install
-```
-
-Run the development server:
+### Installation & Local Setup
 
 ```bash
+# Install dependencies cleanly
+npm ci
+
+# Run development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Scripts
+---
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start the Next.js development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start the production server |
-| `npm run lint` | Run ESLint |
-
-## Running Tests
-
-Unit tests are written with [Vitest](https://vitest.dev):
+## 🧪 Testing & Verification
 
 ```bash
-npx vitest run
+# Run unit tests
+npm test
+
+# Run type check
+npx tsc --noEmit
+
+# Run Linter
+npm run lint
+
+# Build production bundle
+npm run build
 ```
 
-To run a specific test file:
+---
 
-```bash
-npx vitest run tests/musicTheory.test.ts
-npx vitest run tests/audio.test.ts
-```
+## 🛠 Features & Capabilities
 
-## Tech Stack
-
-- [Next.js](https://nextjs.org) — React framework
-- [Tailwind CSS](https://tailwindcss.com) — Styling
-- [Tone.js](https://tonejs.github.io) — Web Audio synthesis
-- [VexFlow](https://www.vexflow.com) — Music notation rendering
-- [Vitest](https://vitest.dev) — Unit testing
+- **Deterministic Music Engines**: Precise pitch-class set calculations (normal order, prime form, interval-class vectors `<ic1..ic6>`), 12-tone matrix generation ($P_n, I_n, R_n, RI_n$), and scale/chord spelling.
+- **Sight-Singing Studio**: Real-time microphone audio autocorrelation pitch detection with cents deviation display.
+- **Piano Performance Lab**: Hardware Web MIDI keyboard support for real-time note input and self-certified technique gauntlets.
+- **Adaptive Spaced Repetition**: EWMA-weighted mastery scoring, response latency tracking, and "Next Best 20 Minutes" practice prescriptions.
+- **Road Mode Toggle**: Mobile-friendly streak protection that adapts practice recommendations when traveling without access to a piano keyboard.
+- **Error Analytics & Knowledge Base**: Micro-lessons linked to practice drills, error pattern logs, and full JSON data export.
