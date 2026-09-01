@@ -71,3 +71,30 @@ export function isSyncopated(subdivisionIndex: number): boolean {
   const pos = subdivisionIndex % 4;
   return pos === 1 || pos === 3;
 }
+
+export interface TupletDefinition {
+  ratio: string; // e.g. "3:2" (3 notes in time of 2)
+  numNotes: number;
+  inTimeOf: number;
+  description: string;
+}
+
+export const COMMON_TUPLETS: Record<string, TupletDefinition> = {
+  'Triplet': { ratio: '3:2', numNotes: 3, inTimeOf: 2, description: '3 notes played in the time of 2' },
+  'Duplet': { ratio: '2:3', numNotes: 2, inTimeOf: 3, description: '2 notes played in the time of 3 (compound meter)' },
+  'Quintuplet': { ratio: '5:4', numNotes: 5, inTimeOf: 4, description: '5 notes played in the time of 4' },
+  'Septuplet': { ratio: '7:4', numNotes: 7, inTimeOf: 4, description: '7 notes played in the time of 4' },
+  'Sextuplet': { ratio: '6:4', numNotes: 6, inTimeOf: 4, description: '6 notes played in the time of 4' },
+};
+
+export function getTupletDurationFactor(tuplet: TupletDefinition): number {
+  return tuplet.inTimeOf / tuplet.numNotes;
+}
+
+/**
+ * Validates whether an additive grouping (e.g., [3, 2, 2]) sums up to the top number of a time signature.
+ */
+export function isValidAdditiveGrouping(groupings: number[], topNumber: number): boolean {
+  const sum = groupings.reduce((acc, curr) => acc + curr, 0);
+  return sum === topNumber;
+}

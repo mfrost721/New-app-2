@@ -37,14 +37,24 @@ export const INITIAL_SKILLS: SkillItem[] = [
   { id: 'a6', category: 'Aural Skills IV', topic: 'Melodic Dictation', mastery: 65, totalAttempts: 12, correctAttempts: 8, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
   { id: 'a7', category: 'Aural Skills IV', topic: 'Sight Singing Accuracy', mastery: 72, totalAttempts: 15, correctAttempts: 11, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
 
+  // Class Piano III
+  { id: 'p3_scale_c_maj', category: 'Class Piano III', topic: 'C Major Scale (2 Octaves)', mastery: 85, totalAttempts: 15, correctAttempts: 13, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_scale_g_maj', category: 'Class Piano III', topic: 'G Major Scale (2 Octaves)', mastery: 80, totalAttempts: 12, correctAttempts: 10, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_scale_d_maj', category: 'Class Piano III', topic: 'D Major Scale (2 Octaves)', mastery: 75, totalAttempts: 10, correctAttempts: 8, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_scale_a_min_harm', category: 'Class Piano III', topic: 'A Harmonic Minor Scale', mastery: 72, totalAttempts: 11, correctAttempts: 8, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_scale_e_min_mel', category: 'Class Piano III', topic: 'E Melodic Minor Scale', mastery: 70, totalAttempts: 9, correctAttempts: 6, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_arp_c_maj', category: 'Class Piano III', topic: 'C Major Tonic Arpeggio', mastery: 78, totalAttempts: 14, correctAttempts: 11, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_cadence_c', category: 'Class Piano III', topic: 'C Major Primary Cadence', mastery: 74, totalAttempts: 10, correctAttempts: 7, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+
   // Class Piano IV
-  { id: 'p1', category: 'Class Piano IV', topic: 'Major & Minor 2-Octave Scales', mastery: 82, totalAttempts: 25, correctAttempts: 21, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p2', category: 'Class Piano IV', topic: 'Tonic Arpeggios', mastery: 78, totalAttempts: 20, correctAttempts: 16, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p3', category: 'Class Piano IV', topic: 'Diminished 7th Resolutions', mastery: 68, totalAttempts: 14, correctAttempts: 9, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p4', category: 'Class Piano IV', topic: 'Melody Harmonization & Transposition', mastery: 61, totalAttempts: 10, correctAttempts: 6, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p5', category: 'Class Piano IV', topic: 'Happy Birthday Harmonization', mastery: 75, totalAttempts: 8, correctAttempts: 6, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p6', category: 'Class Piano IV', topic: 'Sight-Reading Exam Simulation', mastery: 66, totalAttempts: 12, correctAttempts: 8, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p7', category: 'Class Piano IV', topic: 'The Star-Spangled Banner', mastery: 84, totalAttempts: 16, correctAttempts: 14, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_scale_eb_maj', category: 'Class Piano IV', topic: 'Eb Major Scale (100bpm)', mastery: 82, totalAttempts: 25, correctAttempts: 21, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_scale_fs_min_harm', category: 'Class Piano IV', topic: 'F# Harmonic Minor Scale (100bpm)', mastery: 68, totalAttempts: 18, correctAttempts: 12, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_scale_ab_maj', category: 'Class Piano IV', topic: 'Ab Major Scale (100bpm)', mastery: 78, totalAttempts: 20, correctAttempts: 16, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_scale_cs_min_mel', category: 'Class Piano IV', topic: 'C# Melodic Minor Scale (100bpm)', mastery: 65, totalAttempts: 15, correctAttempts: 9, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_arp_d_dim7', category: 'Class Piano IV', topic: 'D Diminished 7th & Resolution', mastery: 68, totalAttempts: 14, correctAttempts: 9, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_harm_trans_g_to_a', category: 'Class Piano IV', topic: 'Melody Harmonization & Transposition', mastery: 61, totalAttempts: 10, correctAttempts: 6, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_sight_reading_lvl3', category: 'Class Piano IV', topic: 'Level III Sight-Reading Exam', mastery: 66, totalAttempts: 12, correctAttempts: 8, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_project_happy_birthday', category: 'Class Piano IV', topic: 'Happy Birthday Project', mastery: 75, totalAttempts: 8, correctAttempts: 6, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
 ];
 
 export const INITIAL_STATE: UserStoreState = {
@@ -103,21 +113,29 @@ export function recordPracticeAttemptInStore(
     return Math.floor((curr - past) / (1000 * 60 * 60 * 24));
   };
 
-  const isPiano = targetSkill.category === 'Class Piano IV';
+  const isPiano = targetSkill.category === 'Class Piano IV' || targetSkill.category === 'Class Piano III';
 
-  if (isPiano) {
-    const pianoDiff = getDaysDiff(currentState.lastPianoDate);
-    if (pianoDiff === null || pianoDiff > 1) {
-      pianoStreak = 1;
-    } else if (pianoDiff === 1) {
-      pianoStreak += 1;
-    }
-  } else {
-    const academicDiff = getDaysDiff(currentState.lastAcademicDate);
-    if (academicDiff === null || academicDiff > 1) {
-      academicStreak = 1;
-    } else if (academicDiff === 1) {
-      academicStreak += 1;
+  let newLastAcademicDate = currentState.lastAcademicDate;
+  let newLastPianoDate = currentState.lastPianoDate;
+
+  // Streak only advances on CORRECT answers
+  if (attempt.isCorrect) {
+    if (isPiano) {
+      const pianoDiff = getDaysDiff(currentState.lastPianoDate);
+      if (pianoDiff === null || pianoDiff > 1) {
+        pianoStreak = 1;
+      } else if (pianoDiff === 1) {
+        pianoStreak += 1;
+      }
+      newLastPianoDate = today;
+    } else {
+      const academicDiff = getDaysDiff(currentState.lastAcademicDate);
+      if (academicDiff === null || academicDiff > 1) {
+        academicStreak = 1;
+      } else if (academicDiff === 1) {
+        academicStreak += 1;
+      }
+      newLastAcademicDate = today;
     }
   }
 
@@ -125,9 +143,9 @@ export function recordPracticeAttemptInStore(
     ...currentState,
     academicStreak,
     pianoStreak,
-    lastAcademicDate: !isPiano ? today : currentState.lastAcademicDate,
-    lastPianoDate: isPiano ? today : currentState.lastPianoDate,
-    totalMinutesStudied: currentState.totalMinutesStudied + durationMinutes,
+    lastAcademicDate: newLastAcademicDate,
+    lastPianoDate: newLastPianoDate,
+    totalMinutesStudied: currentState.totalMinutesStudied + (attempt.isCorrect ? durationMinutes : 0),
     skills: newSkills,
     history: newHistory,
   };

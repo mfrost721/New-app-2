@@ -41,9 +41,8 @@ export default function AnalyticsPage() {
         </div>
 
         <button
-          type="button"
           onClick={exportDataJson}
-          className="px-4 py-2.5 min-h-[44px] bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+          className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all"
         >
           <Download className="w-4 h-4 text-amber-400" />
           <span>Export Practice Data (JSON)</span>

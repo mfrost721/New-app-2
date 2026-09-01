@@ -178,6 +178,34 @@ export function formatIntervalVector(vec: [number, number, number, number, numbe
 /**
  * Checks if two pitch class sets are equivalent under Tn or TnI.
  */
+/**
+ * Common Z-related pairs catalog (Forte designation and Prime forms).
+ */
+export const Z_RELATED_PAIRS = [
+  { pair: ['4-Z15', '4-Z29'], primeA: [0, 1, 4, 6], primeB: [0, 1, 3, 7], icv: '<1 1 1 1 1 1>' },
+  { pair: ['5-Z12', '5-Z36'], primeA: [0, 1, 3, 5, 6], primeB: [0, 1, 2, 4, 7], icv: '<2 2 2 1 1 2>' },
+  { pair: ['5-Z17', '5-Z37'], primeA: [0, 1, 3, 4, 8], primeB: [0, 1, 3, 6, 8], icv: '<2 1 2 3 2 0>' },
+  { pair: ['5-Z18', '5-Z38'], primeA: [0, 1, 4, 5, 7], primeB: [0, 1, 2, 5, 8], icv: '<2 1 2 2 2 1>' },
+  { pair: ['6-Z3', '6-Z36'], primeA: [0, 1, 2, 3, 5, 6], primeB: [0, 1, 2, 3, 4, 7], icv: '<4 3 3 2 2 1>' },
+  { pair: ['6-Z17', '6-Z43'], primeA: [0, 1, 2, 4, 7, 8], primeB: [0, 1, 2, 5, 6, 8], icv: '<3 2 2 3 3 2>' },
+  { pair: ['6-Z19', '6-Z44'], primeA: [0, 1, 3, 4, 7, 8], primeB: [0, 1, 2, 5, 6, 9], icv: '<3 1 3 4 3 1>' },
+  { pair: ['6-Z28', '6-Z49'], primeA: [0, 1, 3, 5, 6, 9], primeB: [0, 1, 3, 4, 7, 9], icv: '<3 1 4 2 4 1>' },
+] as const;
+
+/**
+ * Checks if two pitch class sets are Z-related
+ * (share the exact same interval-class vector but are not equivalent under Tn or TnI).
+ */
+export function isZRelatedPair(setA: number[], setB: number[]): boolean {
+  const vecA = getIntervalVector(setA);
+  const vecB = getIntervalVector(setB);
+  const sameIcv = vecA.every((val, i) => val === vecB[i]);
+  if (!sameIcv) return false;
+
+  const eq = areSetsEquivalent(setA, setB);
+  return !eq.equivalent;
+}
+
 export function areSetsEquivalent(setA: number[], setB: number[]): { equivalent: boolean; transformation?: string } {
   const primeA = getPrimeForm(setA);
   const primeB = getPrimeForm(setB);

@@ -69,6 +69,21 @@ describe('Adaptive Learning Engine & Mastery', () => {
     expect(rxHome.recommendations.some(r => r.category === 'Class Piano IV')).toBe(true);
   });
 
+  it('does not produce negative allocated minutes for short sessions', () => {
+    const skills: SkillItem[] = [
+      { ...dummySkill, id: 's1', category: 'Theory IV', topic: 'Topic 1', mastery: 10 },
+      { ...dummySkill, id: 's2', category: 'Aural Skills IV', topic: 'Topic 2', mastery: 20 },
+      { ...dummySkill, id: 's3', category: 'Class Piano IV', topic: 'Topic 3', mastery: 30 },
+    ];
+
+    const rx = generatePracticePrescription(skills, 5, false);
+    const allocated = rx.recommendations.map(r => r.allocatedMinutes);
+    const totalAllocated = allocated.reduce((sum, value) => sum + value, 0);
+
+    expect(allocated.every(minutes => minutes >= 0)).toBe(true);
+    expect(totalAllocated).toBe(5);
+  });
+
   describe('Streak behavior', () => {
     const pianoSkill: SkillItem = {
       ...dummySkill,
