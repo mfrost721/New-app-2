@@ -24,14 +24,12 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     setStore(loaded);
   }, []);
 
-  const toggleRoadMode = React.useCallback(() => {
-    setStore(prev => {
-      if (!prev) return prev;
-      const updated = { ...prev, isRoadMode: !prev.isRoadMode };
-      saveUserStore(updated);
-      return updated;
-    });
-  }, []);
+  const toggleRoadMode = () => {
+    if (!store) return;
+    const updated = { ...store, isRoadMode: !store.isRoadMode };
+    setStore(updated);
+    saveUserStore(updated);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans">

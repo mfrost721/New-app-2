@@ -33,11 +33,9 @@ export default function HomeDashboard() {
     [store]
   );
 
-  const daysLeft = React.useMemo(() => {
-    if (!store) return 0;
-    const examDateObj = new Date(store.examDate);
-    return Math.max(0, Math.ceil((examDateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
-  }, [store]);
+  const daysLeft = store
+    ? Math.max(0, Math.ceil((new Date(store.examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
 
   if (!store || !theoryReadiness || !auralReadiness || !pianoReadiness || !prescription) {
     return <div className="p-8 text-center text-slate-400">Loading Frost Music Lab...</div>;
