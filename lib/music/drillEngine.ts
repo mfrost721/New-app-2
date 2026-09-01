@@ -40,7 +40,7 @@ export interface DrillQuestion {
   prompt: string;
   inputType: QuestionInputType;
   options?: string[]; // For multiple choice
-  correctAnswer: string; // Canonical answer string
+  correctAnswer: string; // Cannonical answer string
   spellingSensitive: boolean; // True if exact flat/sharp spelling is required (e.g., key signature)
   acceptableAnswers?: string[]; // Alternative valid answers (e.g., enharmonic or alternate formatting)
   explanation: string;
@@ -85,8 +85,7 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
         const keys = Object.keys(KEY_SIGNATURES);
         const selectedKey = sample(keys);
         const info = KEY_SIGNATURES[selectedKey];
-        const accidentalLabel = info.accidentalType === 'none' ? 'accidentals' : info.accidentalType;
-        const countText = `${info.accidentalsCount} ${accidentalLabel}`;
+        const countText = `${info.accidentalsCount} ${info.accidentalType === 'none' ? 'accidentals' : info.accidentalType}`;
         return {
           id: `tonal_ks_${seed}`,
           category: 'tonal',
@@ -97,12 +96,13 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
           inputType: 'spelling_text',
           correctAnswer: countText,
           acceptableAnswers: [
-            `${info.accidentalsCount} ${accidentalLabel}`,
+            `${info.accidentalsCount} ${info.accidentalType}`,
             `${info.accidentalsCount}`,
-            ...(info.accidentalNotes.length > 0 ? [info.accidentalNotes.join(', '), info.accidentalNotes.join(' ')] : []),
+            info.accidentalNotes.join(', '),
+            info.accidentalNotes.join(' '),
           ],
           spellingSensitive: true,
-          explanation: `${info.key} has ${countText}${info.accidentalNotes.length > 0 ? ` (${info.accidentalNotes.join(', ')})` : ''}.`,
+          explanation: `${info.key} has ${info.accidentalsCount} ${info.accidentalType}${info.accidentalNotes.length > 0 ? ` (${info.accidentalNotes.join(', ')})` : ''}.`,
         };
       } else if (difficulty === 2) {
         // Triad / 7th chord spelling
@@ -381,27 +381,13 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
  */
 export function validateDrillAnswer(question: DrillQuestion, userAnswer: string): AnswerValidationResult {
   const cleanUser = userAnswer.trim().toLowerCase();
-  const cleanCorrect = question.correctAnswer.trim().toLowerCase();
 
-  // 1. Exact match with the canonical correct answer → full credit (spellingCorrect + enharmonicCorrect)
-  if (cleanUser === cleanCorrect) {
+  // 1. Direct match with correct answer or acceptable alternatives
+  const allAcceptable = [question.correctAnswer, ...(question.acceptableAnswers || [])].map(a => a.trim().toLowerCase());
+  if (allAcceptable.includes(cleanUser)) {
     return {
       isCorrect: true,
       spellingCorrect: true,
-      enharmonicCorrect: true,
-      userAnswer,
-      expectedAnswer: question.correctAnswer,
-      explanation: `Correct! ${question.explanation}`,
-    };
-  }
-
-  // 2. Match against acceptable alternatives (alternate formats, numeric-only, enharmonic spellings)
-  //    → correct but spellingCorrect is false (the canonical spelling was not used)
-  const alternatives = (question.acceptableAnswers || []).map(a => a.trim().toLowerCase());
-  if (alternatives.includes(cleanUser)) {
-    return {
-      isCorrect: true,
-      spellingCorrect: false,
       enharmonicCorrect: true,
       userAnswer,
       expectedAnswer: question.correctAnswer,
