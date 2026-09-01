@@ -122,28 +122,109 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
     expect(resNaN.midi).toBe(0);
   });
 
-  it('detects pitch accurately from pure sine wave buffers', () => {
+  it('detects pitch accurately from pure sine wave buffers across low, middle, and high pitches', () => {
     const sampleRate = 44100;
 
-    // Test 440 Hz (A4)
+    // A2 (110 Hz) - Low Voice Range
+    const bufA2 = generateSineBuffer(110, sampleRate, 0.1);
+    const resA2 = autoCorrelate(bufA2, sampleRate, { clarityThreshold: 0.5 });
+    expect(resA2).not.toBeNull();
+    if (resA2) {
+      expect(Math.abs(resA2.frequency - 110)).toBeLessThan(2);
+      expect(resA2.midi).toBe(45);
+      expect(resA2.fullName).toBe('A2');
+    }
+
+    // A3 (220 Hz)
+    const bufA3 = generateSineBuffer(220, sampleRate, 0.1);
+    const resA3 = autoCorrelate(bufA3, sampleRate, { clarityThreshold: 0.5 });
+    expect(resA3).not.toBeNull();
+    if (resA3) {
+      expect(Math.abs(resA3.frequency - 220)).toBeLessThan(2);
+      expect(resA3.midi).toBe(57);
+      expect(resA3.fullName).toBe('A3');
+    }
+
+    // A4 (440 Hz)
     const bufA4 = generateSineBuffer(440, sampleRate, 0.1);
     const resA4 = autoCorrelate(bufA4, sampleRate, { clarityThreshold: 0.5 });
     expect(resA4).not.toBeNull();
     if (resA4) {
-      expect(Math.abs(resA4.frequency - 440)).toBeLessThan(5);
+      expect(Math.abs(resA4.frequency - 440)).toBeLessThan(2);
       expect(resA4.midi).toBe(69);
       expect(resA4.fullName).toBe('A4');
       expect(resA4.clarity).toBeGreaterThan(0.5);
     }
 
-    // Test 261.63 Hz (C4)
+    // Test C4 (261.63 Hz)
     const bufC4 = generateSineBuffer(261.63, sampleRate, 0.1);
     const resC4 = autoCorrelate(bufC4, sampleRate, { clarityThreshold: 0.5 });
     expect(resC4).not.toBeNull();
     if (resC4) {
-      expect(Math.abs(resC4.frequency - 261.63)).toBeLessThan(5);
+      expect(Math.abs(resC4.frequency - 261.63)).toBeLessThan(2);
       expect(resC4.midi).toBe(60);
       expect(resC4.fullName).toBe('C4');
+    }
+
+    // Test C5 (523.25 Hz) - Soprano Range
+    const bufC5 = generateSineBuffer(523.25, sampleRate, 0.1);
+    const resC5 = autoCorrelate(bufC5, sampleRate, { clarityThreshold: 0.5 });
+    expect(resC5).not.toBeNull();
+    if (resC5) {
+      expect(Math.abs(resC5.frequency - 523.25)).toBeLessThan(2);
+      expect(resC5.midi).toBe(72);
+      expect(resC5.fullName).toBe('C5');
+    }
+  });
+
+  it('handles realistic sung vocal ranges (E2 82Hz to C6 1046Hz) without octave errors', () => {
+    const sampleRate = 44100;
+    const sungPitches = [
+      { freq: 82.41, midi: 40, name: 'E2' },
+      { freq: 130.81, midi: 48, name: 'C3' },
+      { freq: 174.61, midi: 53, name: 'F3' },
+      { freq: 329.63, midi: 64, name: 'E4' },
+      { freq: 659.25, midi: 76, name: 'E5' },
+      { freq: 1046.50, midi: 84, name: 'C6' },
+    ];
+
+    sungPitches.forEach(p => {
+      const buf = generateSineBuffer(p.freq, sampleRate, 0.1);
+      const res = autoCorrelate(buf, sampleRate, { clarityThreshold: 0.5 });
+      expect(res).not.toBeNull();
+      if (res) {
+        expect(res.midi).toBe(p.midi);
+        expect(res.fullName).toBe(p.name);
+        expect(Math.abs(res.frequency - p.freq)).toBeLessThan(3);
+      }
+    });
+  });
+
+  it('operates across standard audio sample rates (16kHz, 22.05kHz, 44.1kHz, 48kHz, 96kHz)', () => {
+    const sampleRates = [16000, 22050, 44100, 48000, 96000];
+    const targetFreq = 440; // A4
+
+    sampleRates.forEach(sr => {
+      const buf = generateSineBuffer(targetFreq, sr, 0.1);
+      const res = autoCorrelate(buf, sr, { clarityThreshold: 0.5 });
+      expect(res).not.toBeNull();
+      if (res) {
+        expect(res.midi).toBe(69);
+        expect(Math.abs(res.frequency - targetFreq)).toBeLessThan(3);
+      }
+    });
+  });
+
+  it('handles signals near semitone boundaries and calculates cents deviation correctly', () => {
+    const sampleRate = 44100;
+    // A4 + 25 cents = 440 * 2^(25/1200) ≈ 446.39 Hz
+    const freq25Cents = 440 * Math.pow(2, 25 / 1200);
+    const buf25 = generateSineBuffer(freq25Cents, sampleRate, 0.1);
+    const res25 = autoCorrelate(buf25, sampleRate, { clarityThreshold: 0.5 });
+    expect(res25).not.toBeNull();
+    if (res25) {
+      expect(res25.midi).toBe(69);
+      expect(Math.abs(res25.centsDeviation - 25)).toBeLessThan(5);
     }
   });
 
@@ -154,10 +235,30 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
     expect(autoCorrelate(new Float32Array(0), sampleRate)).toBeNull();
     expect(autoCorrelate(new Float32Array(512), sampleRate)).toBeNull();
 
+    // DC Offset Constant Signal
+    const dcBuffer = new Float32Array(2048).fill(0.5);
+    expect(autoCorrelate(dcBuffer, sampleRate)).toBeNull();
+
     // Noise buffer
     const bufNoise = generateNoiseBuffer(sampleRate, 0.1);
     const resNoise = autoCorrelate(bufNoise, sampleRate, { clarityThreshold: 0.7 });
     expect(resNoise).toBeNull();
+  });
+
+  it('benchmarks autocorrelation hot path performance (executes under realistic frame time)', () => {
+    const sampleRate = 44100;
+    const buf = generateSineBuffer(440, sampleRate, 0.05); // ~2205 samples
+
+    const iterations = 50;
+    const startTime = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      autoCorrelate(buf, sampleRate, { clarityThreshold: 0.5 });
+    }
+    const totalTimeMs = performance.now() - startTime;
+    const avgTimeMs = totalTimeMs / iterations;
+
+    // Typical real-time audio frame interval is 100ms; pitch detection must comfortably finish within 5ms per frame
+    expect(avgTimeMs).toBeLessThan(5.0);
   });
 
   describe('Deterministic Sung Pitch Evaluator', () => {

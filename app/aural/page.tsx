@@ -48,7 +48,9 @@ export default function AuralPage() {
     }
     if (audioCtxRef.current) {
       try {
-        void audioCtxRef.current.close();
+        if (audioCtxRef.current.state !== 'closed') {
+          void audioCtxRef.current.close();
+        }
       } catch {
         // Safe catch
       }

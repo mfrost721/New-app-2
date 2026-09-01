@@ -64,15 +64,29 @@ const SOLFEGE_FLAT = ['Do', 'Ra', 'Re', 'Me', 'Mi', 'Fa', 'Se', 'Sol', 'Le', 'La
 const SCALE_DEGREES_SHARP = ['1', '♯1', '2', '♯2', '3', '4', '♯4', '5', '♯5', '6', '♯6', '7'];
 const SCALE_DEGREES_FLAT = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
 
-let scratchBuffer = new Float32Array(2048);
+let scratchZeroMean = new Float32Array(2048);
+let scratchCorrelation = new Float32Array(2048);
+let scratchEnergy = new Float32Array(2048);
 
-function getScratchBuffer(size: number): Float32Array {
-  if (scratchBuffer.length < size) {
-    scratchBuffer = new Float32Array(size);
+function getScratchBuffers(size: number): {
+  zeroMean: Float32Array;
+  correlation: Float32Array;
+  energy: Float32Array;
+} {
+  if (scratchZeroMean.length < size) {
+    scratchZeroMean = new Float32Array(size);
+    scratchCorrelation = new Float32Array(size);
+    scratchEnergy = new Float32Array(size);
   } else {
-    scratchBuffer.fill(0, 0, size);
+    scratchZeroMean.fill(0, 0, size);
+    scratchCorrelation.fill(0, 0, size);
+    scratchEnergy.fill(0, 0, size);
   }
-  return scratchBuffer;
+  return {
+    zeroMean: scratchZeroMean,
+    correlation: scratchCorrelation,
+    energy: scratchEnergy,
+  };
 }
 
 /**
@@ -162,81 +176,132 @@ export function autoCorrelate(
   const SIZE = buffer.length;
   if (SIZE < 64) return null;
 
-  let rms = 0;
+  // 1. Calculate RMS and mean (DC offset)
+  let sum = 0;
+  let sumSq = 0;
   for (let i = 0; i < SIZE; i++) {
     const val = buffer[i];
-    rms += val * val;
+    sum += val;
+    sumSq += val * val;
   }
-  rms = Math.sqrt(rms / SIZE);
+  const mean = sum / SIZE;
+  const rms = Math.sqrt(Math.max(0, (sumSq / SIZE) - (mean * mean)));
 
   // Signal too quiet
   if (rms < minRms) return null;
 
-  let r1 = 0;
-  let r2 = SIZE - 1;
-  const thres = 0.2;
+  // 2. Prepare zero-mean buffer and scratch space
+  const { zeroMean, correlation, energy } = getScratchBuffers(SIZE);
+  for (let i = 0; i < SIZE; i++) {
+    zeroMean[i] = buffer[i] - mean;
+  }
 
-  for (let i = 0; i < Math.floor(SIZE / 2); i++) {
-    if (Math.abs(buffer[i]) < thres) {
-      r1 = i;
-      break;
+  // 3. Lag bounds search based on target frequency limits
+  // lag = sampleRate / freq => maxLag corresponds to minFreq, minLag corresponds to maxFreq
+  const minLag = Math.max(2, Math.floor(sampleRate / maxFreq));
+  const maxLag = Math.min(SIZE - 2, Math.ceil(sampleRate / minFreq));
+
+  if (minLag >= maxLag || maxLag >= SIZE - 1) return null;
+
+  // 4. Compute Autocorrelation and Normalized Square Difference Function (NSDF) energy term
+  // energy[0] = sum_{j=0}^{SIZE-1} x[j]^2
+  // energy[k] = sum_{j=0}^{SIZE-1-k} (x[j]^2 + x[j+k]^2)
+  let sumSqZeroMean = 0;
+  for (let j = 0; j < SIZE; j++) {
+    const val = zeroMean[j];
+    sumSqZeroMean += val * val;
+  }
+
+  if (sumSqZeroMean <= 0) return null;
+
+  // Cumulative energy calculation for NSDF normalization:
+  // m(k) = sum_{j=0}^{SIZE-1-k} x[j]^2 + x[j+k]^2
+  let headSum = sumSqZeroMean;
+  let tailSum = sumSqZeroMean;
+
+  energy[0] = 2 * sumSqZeroMean;
+
+  for (let k = 1; k <= maxLag + 1; k++) {
+    headSum -= zeroMean[SIZE - k] * zeroMean[SIZE - k];
+    tailSum -= zeroMean[k - 1] * zeroMean[k - 1];
+    energy[k] = headSum + tailSum;
+  }
+
+  // Autocorrelation r(k) = sum_{j=0}^{SIZE-1-k} x[j] * x[j+k]
+  correlation[0] = sumSqZeroMean;
+  const startLag = Math.max(1, minLag - 1);
+
+  for (let k = startLag; k <= maxLag + 1; k++) {
+    let acc = 0;
+    const limit = SIZE - k;
+    for (let j = 0; j < limit; j++) {
+      acc += zeroMean[j] * zeroMean[j + k];
+    }
+    correlation[k] = acc;
+  }
+
+  // 5. NSDF term: R(k) = 2 * r(k) / m(k)
+  // Store normalized correlation in correlation array
+  const nsdf = correlation; // reuse correlation buffer for NSDF values
+  const m0 = energy[0];
+  nsdf[0] = m0 > 0 ? (2 * correlation[0]) / m0 : 0;
+
+  for (let k = startLag; k <= maxLag + 1; k++) {
+    const mK = energy[k];
+    nsdf[k] = mK > 0 ? (2 * correlation[k]) / mK : 0;
+  }
+
+  // 6. Find local key peaks in NSDF (McLeod Pitch Method)
+  // Peak searching: find positively valued local maxima in range minLag..maxLag
+  const peaks: { lag: number; nsdfVal: number }[] = [];
+  let maxNsdfVal = -1;
+
+  for (let k = minLag; k <= maxLag; k++) {
+    if (nsdf[k] > 0 && nsdf[k] >= nsdf[k - 1] && nsdf[k] >= nsdf[k + 1]) {
+      if (nsdf[k] > maxNsdfVal) {
+        maxNsdfVal = nsdf[k];
+      }
+      peaks.push({ lag: k, nsdfVal: nsdf[k] });
     }
   }
-  for (let i = 1; i < Math.floor(SIZE / 2); i++) {
-    if (Math.abs(buffer[SIZE - i]) < thres) {
-      r2 = SIZE - i;
-      break;
-    }
-  }
 
-  const buf = r2 > r1 ? buffer.subarray(r1, r2) : buffer;
-  const newSize = buf.length;
-  if (newSize < 32) return null;
-
-  const c = getScratchBuffer(newSize);
-  for (let i = 0; i < newSize; i++) {
-    for (let j = 0; j < newSize - i; j++) {
-      c[i] += buf[j] * buf[j + i];
-    }
-  }
-
-  if (newSize < 3) return null;
-
-  let d = 0;
-  while (d < newSize - 1 && c[d] > c[d + 1]) {
-    d++;
-  }
-
-  let maxval = -1;
-  let maxpos = -1;
-  for (let i = d; i < newSize; i++) {
-    if (c[i] > maxval) {
-      maxval = c[i];
-      maxpos = i;
-    }
-  }
-
-  if (maxpos <= 0 || maxpos >= newSize - 1 || maxval <= 0) {
+  if (peaks.length === 0 || maxNsdfVal <= 0) {
     return null;
   }
 
-  let T0 = maxpos;
-  const x1 = c[T0 - 1];
-  const x2 = c[T0];
-  const x3 = c[T0 + 1];
+  // 7. Octave selection thresholding: pick first peak whose NSDF is within 85% of max peak
+  const peakThreshold = 0.85 * maxNsdfVal;
+  let selectedPeak = peaks[0];
 
-  const a = (x1 + x3 - 2 * x2) / 2;
-  const b = (x3 - x1) / 2;
-  if (a !== 0) {
-    T0 = T0 - b / (2 * a);
+  for (let i = 0; i < peaks.length; i++) {
+    if (peaks[i].nsdfVal >= peakThreshold) {
+      selectedPeak = peaks[i];
+      break;
+    }
   }
 
-  if (!T0 || T0 <= 0) return null;
+  const k = selectedPeak.lag;
 
-  const freq = sampleRate / T0;
+  // 8. Parabolic interpolation for sub-sample accuracy around selected lag k
+  const y1 = nsdf[k - 1];
+  const y2 = nsdf[k];
+  const y3 = nsdf[k + 1];
+
+  let delta = 0;
+  const denom = (2 * y2 - y1 - y3);
+  if (denom !== 0) {
+    delta = (y3 - y1) / (2 * denom);
+  }
+
+  const refinedLag = k + delta;
+  if (!refinedLag || refinedLag <= 0) return null;
+
+  const freq = sampleRate / refinedLag;
   if (isNaN(freq) || !isFinite(freq) || freq < minFreq || freq > maxFreq) return null;
 
-  const clarity = c[0] > 0 ? Math.min(1, Math.max(0, maxval / c[0])) : 0;
+  // Clarity is the peak NSDF value (range 0 to 1)
+  const interpolatedPeakVal = y2 + 0.5 * delta * (y3 - y1);
+  const clarity = Math.min(1, Math.max(0, interpolatedPeakVal));
   if (clarity < clarityThreshold) return null;
 
   const info = freqToMidi(freq, preferFlat, keyTonicPc);
