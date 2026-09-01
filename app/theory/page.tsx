@@ -105,34 +105,54 @@ export default function TheoryPage() {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto">
+        <div role="tablist" aria-label="Theory laboratory sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto">
           <button
+            id="tab-drills"
+            role="tab"
+            aria-selected={activeTab === 'drills'}
+            aria-controls="tabpanel-drills"
             onClick={() => setActiveTab('drills')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'drills' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'drills' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Theory Drills
           </button>
           <button
+            id="tab-setTheory"
+            role="tab"
+            aria-selected={activeTab === 'setTheory'}
+            aria-controls="tabpanel-setTheory"
             onClick={() => setActiveTab('setTheory')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'setTheory' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'setTheory' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Pitch-Class Sets
           </button>
           <button
+            id="tab-matrixSpeedRun"
+            role="tab"
+            aria-selected={activeTab === 'matrixSpeedRun'}
+            aria-controls="tabpanel-matrixSpeedRun"
             onClick={() => setActiveTab('matrixSpeedRun')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'matrixSpeedRun' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'matrixSpeedRun' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Matrix Speed Run
           </button>
           <button
+            id="tab-modes"
+            role="tab"
+            aria-selected={activeTab === 'modes'}
+            aria-controls="tabpanel-modes"
             onClick={() => setActiveTab('modes')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'modes' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'modes' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Modes & Scales
           </button>
           <button
+            id="tab-scoreAnalysis"
+            role="tab"
+            aria-selected={activeTab === 'scoreAnalysis'}
+            aria-controls="tabpanel-scoreAnalysis"
             onClick={() => setActiveTab('scoreAnalysis')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'scoreAnalysis' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'scoreAnalysis' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Score Arena
           </button>
@@ -148,7 +168,7 @@ export default function TheoryPage() {
 
       {/* 0. GRADED DRILLS ENGINE */}
       {activeTab === 'drills' && (
-        <div className="space-y-6">
+        <div id="tabpanel-drills" role="tabpanel" aria-labelledby="tab-drills" className="space-y-6">
           {/* Controls bar */}
           <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -294,7 +314,7 @@ export default function TheoryPage() {
 
       {/* 1. SET THEORY LAB */}
       {activeTab === 'setTheory' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div id="tabpanel-setTheory" role="tabpanel" aria-labelledby="tab-setTheory" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Interactive Pitch-Class Clock</h2>
             <PitchClassClock selectedPcs={selectedPcs} onTogglePc={togglePc} />
@@ -338,7 +358,7 @@ export default function TheoryPage() {
 
       {/* 2. TWELVE-TONE MATRIX SPEED RUN */}
       {activeTab === 'matrixSpeedRun' && (
-        <div className="space-y-6">
+        <div id="tabpanel-matrixSpeedRun" role="tabpanel" aria-labelledby="tab-matrixSpeedRun" className="space-y-6">
           <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 flex justify-between items-center">
             <div>
               <h2 className="text-base font-bold text-slate-100">Twelve-Tone Matrix Challenge</h2>
@@ -386,7 +406,7 @@ export default function TheoryPage() {
 
       {/* 3. MODES & SCALES */}
       {activeTab === 'modes' && (
-        <div className="space-y-6">
+        <div id="tabpanel-modes" role="tabpanel" aria-labelledby="tab-modes" className="space-y-6">
           <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-4">
             <h2 className="text-lg font-bold text-slate-100">Mode Identification Trainer</h2>
             <p className="text-xs text-slate-400">
@@ -426,7 +446,7 @@ export default function TheoryPage() {
 
       {/* 4. SCORE ARENA */}
       {activeTab === 'scoreAnalysis' && (
-        <div className="space-y-6">
+        <div id="tabpanel-scoreAnalysis" role="tabpanel" aria-labelledby="tab-scoreAnalysis" className="space-y-6">
           <ScoreViewer
             title="Schoenberg Op. 19 Excerpt Analysis"
             annotations={[
