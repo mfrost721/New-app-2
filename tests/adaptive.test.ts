@@ -91,4 +91,113 @@ describe('Adaptive Learning Engine & Mastery', () => {
 
     expect(updated.academicStreak).toBe(1);
   });
+
+  it('does not increase academic streak for same-day practice', () => {
+    const state = {
+      examDate: '2026-12-08',
+      isRoadMode: false,
+      academicStreak: 4,
+      pianoStreak: 3,
+      lastAcademicDate: '2025-01-10',
+      lastPianoDate: '2025-01-09',
+      skills: [dummySkill],
+      history: [],
+      totalMinutesStudied: 10,
+    };
+
+    const updated = recordPracticeAttemptInStore(state, {
+      skillId: 'test-1',
+      isCorrect: true,
+      responseTimeMs: 2000,
+      date: '2025-01-10',
+    });
+
+    expect(updated.academicStreak).toBe(4);
+  });
+
+  it('increments academic streak when practice is exactly one day later', () => {
+    const state = {
+      examDate: '2026-12-08',
+      isRoadMode: false,
+      academicStreak: 4,
+      pianoStreak: 3,
+      lastAcademicDate: '2025-01-10',
+      lastPianoDate: '2025-01-09',
+      skills: [dummySkill],
+      history: [],
+      totalMinutesStudied: 10,
+    };
+
+    const updated = recordPracticeAttemptInStore(state, {
+      skillId: 'test-1',
+      isCorrect: true,
+      responseTimeMs: 2000,
+      date: '2025-01-11',
+    });
+
+    expect(updated.academicStreak).toBe(5);
+  });
+
+  it('resets academic streak to 1 when there is a gap greater than one day', () => {
+    const state = {
+      examDate: '2026-12-08',
+      isRoadMode: false,
+      academicStreak: 4,
+      pianoStreak: 3,
+      lastAcademicDate: '2025-01-10',
+      lastPianoDate: '2025-01-09',
+      skills: [dummySkill],
+      history: [],
+      totalMinutesStudied: 10,
+    };
+
+    const updated = recordPracticeAttemptInStore(state, {
+      skillId: 'test-1',
+      isCorrect: true,
+      responseTimeMs: 2000,
+      date: '2025-01-13',
+    });
+
+    expect(updated.academicStreak).toBe(1);
+  });
+
+  it('keeps piano streak independent from academic streak changes', () => {
+    const pianoSkill: SkillItem = {
+      ...dummySkill,
+      id: 'piano-1',
+      category: 'Class Piano IV',
+      topic: 'Scale Practice',
+    };
+    const state = {
+      examDate: '2026-12-08',
+      isRoadMode: false,
+      academicStreak: 4,
+      pianoStreak: 2,
+      lastAcademicDate: '2025-01-10',
+      lastPianoDate: '2025-01-10',
+      skills: [dummySkill, pianoSkill],
+      history: [],
+      totalMinutesStudied: 10,
+    };
+
+    const afterAcademic = recordPracticeAttemptInStore(state, {
+      skillId: 'test-1',
+      isCorrect: true,
+      responseTimeMs: 2000,
+      date: '2025-01-11',
+    });
+    expect(afterAcademic.academicStreak).toBe(5);
+    expect(afterAcademic.pianoStreak).toBe(2);
+    expect(afterAcademic.lastPianoDate).toBe('2025-01-10');
+
+    const afterPiano = recordPracticeAttemptInStore(state, {
+      skillId: 'piano-1',
+      isCorrect: true,
+      responseTimeMs: 2000,
+      date: '2025-01-11',
+    });
+    expect(afterPiano.pianoStreak).toBe(3);
+    expect(afterPiano.academicStreak).toBe(4);
+    expect(afterPiano.lastAcademicDate).toBe('2025-01-10');
+  });
 });
