@@ -13,7 +13,9 @@ export type NoteName = typeof NOTE_NAMES[number] | typeof FLAT_NOTE_NAMES[number
  * Converts note name to pitch class integer (0-11).
  */
 export function noteToPitchClass(note: string): number {
-  const clean = note.trim().toUpperCase();
+  const rawClean = note.trim().toUpperCase();
+  // Strip octave digits if present at the end, e.g., "C4" -> "C", "F#3" -> "F#"
+  const clean = rawClean.replace(/\d+$/, '');
   const map: Record<string, number> = {
     'C': 0, 'B#': 0,
     'C#': 1, 'DB': 1,
@@ -29,7 +31,7 @@ export function noteToPitchClass(note: string): number {
     'B': 11, 'CB': 11,
   };
   if (clean in map) return map[clean];
-  const parsed = parseInt(clean, 10);
+  const parsed = parseInt(rawClean, 10);
   if (!isNaN(parsed)) return ((parsed % 12) + 12) % 12;
   throw new Error(`Invalid note name or integer: ${note}`);
 }
