@@ -105,19 +105,27 @@ export function recordPracticeAttemptInStore(
 
   const isPiano = targetSkill.category === 'Class Piano IV';
 
-  if (isPiano) {
-    const pianoDiff = getDaysDiff(currentState.lastPianoDate);
-    if (pianoDiff === null || pianoDiff > 1) {
-      pianoStreak = 1;
-    } else if (pianoDiff === 1) {
-      pianoStreak += 1;
-    }
-  } else {
-    const academicDiff = getDaysDiff(currentState.lastAcademicDate);
-    if (academicDiff === null || academicDiff > 1) {
-      academicStreak = 1;
-    } else if (academicDiff === 1) {
-      academicStreak += 1;
+  let newLastAcademicDate = currentState.lastAcademicDate;
+  let newLastPianoDate = currentState.lastPianoDate;
+
+  // Streak only advances on CORRECT answers
+  if (attempt.isCorrect) {
+    if (isPiano) {
+      const pianoDiff = getDaysDiff(currentState.lastPianoDate);
+      if (pianoDiff === null || pianoDiff > 1) {
+        pianoStreak = 1;
+      } else if (pianoDiff === 1) {
+        pianoStreak += 1;
+      }
+      newLastPianoDate = today;
+    } else {
+      const academicDiff = getDaysDiff(currentState.lastAcademicDate);
+      if (academicDiff === null || academicDiff > 1) {
+        academicStreak = 1;
+      } else if (academicDiff === 1) {
+        academicStreak += 1;
+      }
+      newLastAcademicDate = today;
     }
   }
 
@@ -125,9 +133,9 @@ export function recordPracticeAttemptInStore(
     ...currentState,
     academicStreak,
     pianoStreak,
-    lastAcademicDate: !isPiano ? today : currentState.lastAcademicDate,
-    lastPianoDate: isPiano ? today : currentState.lastPianoDate,
-    totalMinutesStudied: currentState.totalMinutesStudied + durationMinutes,
+    lastAcademicDate: newLastAcademicDate,
+    lastPianoDate: newLastPianoDate,
+    totalMinutesStudied: currentState.totalMinutesStudied + (attempt.isCorrect ? durationMinutes : 0),
     skills: newSkills,
     history: newHistory,
   };

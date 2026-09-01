@@ -1,17 +1,31 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import PitchClassClock from '@/components/PitchClassClock';
 import MatrixGrid from '@/components/MatrixGrid';
 import ScoreViewer from '@/components/ScoreViewer';
 import KeyboardVisualizer from '@/components/KeyboardVisualizer';
 import { getNormalOrder, getPrimeForm, getIntervalVector, formatIntervalVector } from '@/lib/music/pitchClass';
 import { buildScale, SCALE_DEFINITIONS, ModeName } from '@/lib/music/scalesAndModes';
+import {
+  generateDrillQuestion,
+  validateDrillAnswer,
+  DrillCategory,
+  DrillDifficulty,
+  AnswerValidationResult,
+} from '@/lib/music/drillEngine';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
-import { Brain, Check, Clock } from 'lucide-react';
+import { Brain, Check, Clock, Sparkles, HelpCircle, ArrowRight, RotateCcw } from 'lucide-react';
 
 export default function TheoryPage() {
-  const [activeTab, setActiveTab] = useState<'setTheory' | 'matrixSpeedRun' | 'modes' | 'scoreAnalysis' | 'mockExam'>('setTheory');
+  const [activeTab, setActiveTab] = useState<'drills' | 'setTheory' | 'matrixSpeedRun' | 'modes' | 'scoreAnalysis'>('drills');
+
+  // Drill Runner state
+  const [drillCategory, setDrillCategory] = useState<DrillCategory>('tonal');
+  const [drillDifficulty, setDrillDifficulty] = useState<DrillDifficulty>(1);
+  const [seedInput, setSeedInput] = useState<number>(42);
+  const [userDrillInput, setUserDrillInput] = useState<string>('');
+  const [validationResult, setValidationResult] = useState<AnswerValidationResult | null>(null);
 
   // Set Theory State
   const [selectedPcs, setSelectedPcs] = useState<number[]>([0, 1, 4]);
@@ -24,6 +38,11 @@ export default function TheoryPage() {
 
   // Mode Trainer state
   const currentMode: ModeName = 'Dorian';
+
+  // Current Drill Question generated deterministically
+  const currentDrillQuestion = useMemo(() => {
+    return generateDrillQuestion(drillCategory, drillDifficulty, seedInput);
+  }, [drillCategory, drillDifficulty, seedInput]);
 
   const togglePc = (pc: number) => {
     setSelectedPcs(prev =>
@@ -48,6 +67,30 @@ export default function TheoryPage() {
     setTimeout(() => setFeedback(null), 3000);
   };
 
+  const handleDrillSubmit = (inputToValidate?: string) => {
+    const textToTest = inputToValidate !== undefined ? inputToValidate : userDrillInput;
+    if (!textToTest.trim()) return;
+
+    const res = validateDrillAnswer(currentDrillQuestion, textToTest);
+    setValidationResult(res);
+
+    const store = loadUserStore();
+    recordPracticeAttemptInStore(store, {
+      skillId: currentDrillQuestion.skillId,
+      isCorrect: res.isCorrect,
+      confidenceRating: res.isCorrect ? 4 : 2,
+      responseTimeMs: 4500,
+      errorType: res.isCorrect ? undefined : 'Drill answer mistake',
+      date: new Date().toISOString(),
+    });
+  };
+
+  const handleNextDrillQuestion = () => {
+    setSeedInput(prev => prev + 1);
+    setUserDrillInput('');
+    setValidationResult(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 gap-4">
@@ -63,6 +106,12 @@ export default function TheoryPage() {
 
         {/* Tab Switcher */}
         <div className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('drills')}
+            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'drills' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            Theory Drills
+          </button>
           <button
             onClick={() => setActiveTab('setTheory')}
             className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'setTheory' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
@@ -94,6 +143,152 @@ export default function TheoryPage() {
         <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-bold flex items-center space-x-2">
           <Check className="w-4 h-4" />
           <span>{feedback}</span>
+        </div>
+      )}
+
+      {/* 0. GRADED DRILLS ENGINE */}
+      {activeTab === 'drills' && (
+        <div className="space-y-6">
+          {/* Controls bar */}
+          <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Category:</span>
+              {(['tonal', 'form', 'modes', 'setTheory', 'twelveTone', 'rhythm', 'postTonal'] as DrillCategory[]).map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setDrillCategory(cat);
+                    setValidationResult(null);
+                    setUserDrillInput('');
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                    drillCategory === cat
+                      ? 'bg-amber-500 border-amber-400 text-slate-950 font-bold'
+                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center space-x-3 text-xs font-bold">
+              <span className="text-slate-400 uppercase">Difficulty:</span>
+              {[1, 2, 3, 4].map(lvl => (
+                <button
+                  key={lvl}
+                  onClick={() => {
+                    setDrillDifficulty(lvl as DrillDifficulty);
+                    setValidationResult(null);
+                    setUserDrillInput('');
+                  }}
+                  className={`w-7 h-7 rounded-lg transition-all flex items-center justify-center ${
+                    drillDifficulty === lvl
+                      ? 'bg-amber-500 text-slate-950 font-black'
+                      : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
+                  }`}
+                >
+                  {lvl}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setSeedInput(Math.floor(Math.random() * 10000))}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 text-xs flex items-center space-x-1"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>New Seed</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Drill Question Card */}
+          <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-4">
+            <div className="flex justify-between items-center text-xs">
+              <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold rounded-lg uppercase">
+                {currentDrillQuestion.topic} • Lvl {currentDrillQuestion.difficulty}
+              </span>
+              <span className="text-slate-500 font-mono">Seed: #{seedInput}</span>
+            </div>
+
+            <h2 className="text-lg font-bold text-slate-100">{currentDrillQuestion.prompt}</h2>
+
+            {/* Multiple Choice Options */}
+            {currentDrillQuestion.options ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                {currentDrillQuestion.options.map((opt, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setUserDrillInput(opt);
+                      handleDrillSubmit(opt);
+                    }}
+                    className={`p-3 rounded-xl border text-left text-xs font-semibold transition-all ${
+                      userDrillInput === opt
+                        ? 'bg-amber-500/10 border-amber-500 text-amber-300'
+                        : 'bg-slate-950 border-slate-800 text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              /* Text Input */
+              <div className="flex space-x-3 pt-2">
+                <input
+                  type="text"
+                  placeholder="Enter answer (e.g. notes, prime form, ratio)..."
+                  value={userDrillInput}
+                  onChange={(e) => setUserDrillInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleDrillSubmit()}
+                  className="flex-1 px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
+                <button
+                  onClick={() => handleDrillSubmit()}
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all"
+                >
+                  Submit
+                </button>
+              </div>
+            )}
+
+            {/* Validation Explanation Box */}
+            {validationResult && (
+              <div
+                className={`p-4 rounded-xl text-xs space-y-2 border ${
+                  validationResult.isCorrect
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                }`}
+              >
+                <div className="font-bold flex items-center space-x-2">
+                  {validationResult.isCorrect ? <Check className="w-4 h-4 text-emerald-400" /> : <HelpCircle className="w-4 h-4 text-rose-400" />}
+                  <span>{validationResult.isCorrect ? 'Correct!' : 'Incorrect'}</span>
+                </div>
+                <p className="leading-relaxed">{validationResult.explanation}</p>
+
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    onClick={handleNextDrillQuestion}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold rounded-lg text-xs flex items-center space-x-1"
+                  >
+                    <span>Next Question</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  {!validationResult.isCorrect && (
+                    <button
+                      onClick={() => setValidationResult(null)}
+                      className="px-4 py-2 bg-slate-800/50 hover:bg-slate-800 text-slate-300 font-bold rounded-lg text-xs flex items-center space-x-1"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Retry</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
