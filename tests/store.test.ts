@@ -163,6 +163,50 @@ describe('Storage and UserStore Engine', () => {
     expect(updated.lastPianoDate).toBe('2026-03-02');
   });
 
+  it('does not advance streaks or study minutes on incorrect attempts', () => {
+    const baseState: UserStoreState = {
+      ...INITIAL_STATE,
+      academicStreak: 5,
+      pianoStreak: 3,
+      totalMinutesStudied: 100,
+      lastAcademicDate: '2026-03-01',
+      lastPianoDate: '2026-03-01',
+    };
+
+    const wrongAttempt: PracticeAttempt = {
+      skillId: 't1',
+      isCorrect: false,
+      responseTimeMs: 2500,
+      date: '2026-03-02T10:00:00.000Z',
+    };
+
+    const updated = recordPracticeAttemptInStore(baseState, wrongAttempt, 5);
+    expect(updated.academicStreak).toBe(5);
+    expect(updated.lastAcademicDate).toBe('2026-03-01');
+    expect(updated.totalMinutesStudied).toBe(100);
+  });
+
+  it('maintains academic and piano streaks independently', () => {
+    const baseState: UserStoreState = {
+      ...INITIAL_STATE,
+      academicStreak: 5,
+      pianoStreak: 2,
+      lastAcademicDate: '2026-03-01',
+      lastPianoDate: '2026-03-01',
+    };
+
+    // Practice academic skill on next day
+    const academicAttempt: PracticeAttempt = {
+      skillId: 't1', // Theory IV
+      isCorrect: true,
+      responseTimeMs: 1000,
+      date: '2026-03-02T10:00:00.000Z',
+    };
+    const updated = recordPracticeAttemptInStore(baseState, academicAttempt);
+    expect(updated.academicStreak).toBe(6);
+    expect(updated.pianoStreak).toBe(2);
+  });
+
   it('caps history list at 100 entries', () => {
     const state = { ...INITIAL_STATE, history: Array.from({ length: 100 }, (_, i) => ({
       skillId: `t1-${i}`,
