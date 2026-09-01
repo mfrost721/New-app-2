@@ -44,6 +44,53 @@ describe('Adaptive Learning Engine & Mastery', () => {
     expect(updated.errorHistory).toContain('Inversion error');
   });
 
+  it('clamps mastery between 0 and 100 and caps latency and error histories', () => {
+    // Clamping at 100 upper bound
+    const highSkill = { ...dummySkill, mastery: 98 };
+    const maxMastery = updateSkillMastery(highSkill, {
+      skillId: 'test-1',
+      isCorrect: true,
+      confidenceRating: 1,
+      responseTimeMs: 1000,
+      date: '2025-01-02',
+    });
+    expect(maxMastery.mastery).toBe(100);
+
+    // Clamping at 0 lower bound
+    const lowSkill = { ...dummySkill, mastery: 5 };
+    const minMastery = updateSkillMastery(lowSkill, {
+      skillId: 'test-1',
+      isCorrect: false,
+      confidenceRating: 5,
+      responseTimeMs: 5000,
+      date: '2025-01-02',
+    });
+    expect(minMastery.mastery).toBe(0);
+
+    // Recent latency array length capped at 10 items
+    let latencySkill = { ...dummySkill, recentLatencyMs: Array.from({ length: 15 }, (_, i) => (i + 1) * 1000) };
+    latencySkill = updateSkillMastery(latencySkill, {
+      skillId: 'test-1',
+      isCorrect: true,
+      responseTimeMs: 9999,
+      date: '2025-01-02',
+    });
+    expect(latencySkill.recentLatencyMs.length).toBe(10);
+    expect(latencySkill.recentLatencyMs[9]).toBe(9999);
+
+    // Error history length capped at 20 items
+    let errorSkill = { ...dummySkill, errorHistory: Array.from({ length: 25 }, (_, i) => `Err ${i}`) };
+    errorSkill = updateSkillMastery(errorSkill, {
+      skillId: 'test-1',
+      isCorrect: false,
+      errorType: 'New Error',
+      responseTimeMs: 2000,
+      date: '2025-01-02',
+    });
+    expect(errorSkill.errorHistory.length).toBe(20);
+    expect(errorSkill.errorHistory[19]).toBe('New Error');
+  });
+
   it('calculates category exam readiness', () => {
     const skills: SkillItem[] = [
       { ...dummySkill, mastery: 80, topic: 'Topic A' },
@@ -54,6 +101,15 @@ describe('Adaptive Learning Engine & Mastery', () => {
     expect(readiness.masteryPercentage).toBe(85);
     expect(readiness.readinessLabel).toBe('EXAM READY');
     expect(readiness.passingProbability).toBeGreaterThan(80);
+  });
+
+  it('returns default LOW readiness for empty skill categories', () => {
+    const readiness = calculateExamReadiness([], 'Class Piano III');
+    expect(readiness.masteryPercentage).toBe(0);
+    expect(readiness.readinessLabel).toBe('LOW');
+    expect(readiness.passingProbability).toBe(25);
+    expect(readiness.weakestTopics.length).toBe(0);
+    expect(readiness.strongestTopics.length).toBe(0);
   });
 
   it('generates practice prescriptions excluding piano in Road Mode', () => {

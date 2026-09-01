@@ -27,4 +27,18 @@ describe('PWA & Accessibility Verification', () => {
     expect(swContent).toContain("'/aural'");
     expect(swContent).toContain("'/piano'");
   });
+
+  it('validates manifest.json icons exist on disk', () => {
+    const manifestPath = path.join(process.cwd(), 'public', 'manifest.json');
+    const content = fs.readFileSync(manifestPath, 'utf-8');
+    const manifest = JSON.parse(content);
+
+    for (const icon of manifest.icons) {
+      const relativeSrc = icon.src.replace(/^\//, '');
+      // Check in app/ if favicon.ico, or public/ otherwise
+      const iconPathInPublic = path.join(process.cwd(), 'public', relativeSrc);
+      const iconPathInApp = path.join(process.cwd(), 'app', relativeSrc);
+      expect(fs.existsSync(iconPathInPublic) || fs.existsSync(iconPathInApp)).toBe(true);
+    }
+  });
 });

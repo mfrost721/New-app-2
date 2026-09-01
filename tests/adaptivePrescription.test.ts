@@ -44,4 +44,35 @@ describe('Adaptive Practice Prescription Engine', () => {
     const sumMinutes = rx.recommendations.reduce((acc, r) => acc + r.allocatedMinutes, 0);
     expect(sumMinutes).toBe(20);
   });
+
+  it('filters out Class Piano III skills as well in Road Mode', () => {
+    const pianoSkills: SkillItem[] = [
+      ...sampleSkills,
+      { id: 'p3', category: 'Class Piano III', topic: 'C Major Scale', mastery: 15, totalAttempts: 2, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+    ];
+    const rx = generatePracticePrescription(pianoSkills, 15, true);
+    const pianoRecs = rx.recommendations.filter(r => r.category === 'Class Piano III' || r.category === 'Class Piano IV');
+    expect(pianoRecs.length).toBe(0);
+  });
+
+  it('handles low minute allocations and 0 totalMinutes gracefully without negative values', () => {
+    const rx0 = generatePracticePrescription(sampleSkills, 0, false);
+    expect(rx0.totalMinutes).toBe(0);
+    expect(rx0.recommendations.reduce((acc, r) => acc + r.allocatedMinutes, 0)).toBe(0);
+
+    const rx2 = generatePracticePrescription(sampleSkills, 2, false);
+    expect(rx2.totalMinutes).toBe(2);
+    expect(rx2.recommendations.reduce((acc, r) => acc + r.allocatedMinutes, 0)).toBe(2);
+    expect(rx2.recommendations.every(r => r.allocatedMinutes >= 0)).toBe(true);
+  });
+
+  it('falls back to full skill set if all skills in list are piano skills in Road Mode', () => {
+    const onlyPiano: SkillItem[] = [
+      { id: 'p3_1', category: 'Class Piano III', topic: 'C Major', mastery: 40, totalAttempts: 1, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+      { id: 'p4_1', category: 'Class Piano IV', topic: 'Eb Major', mastery: 50, totalAttempts: 1, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+    ];
+    const rx = generatePracticePrescription(onlyPiano, 10, true);
+    expect(rx.recommendations.length).toBeGreaterThan(0);
+    expect(rx.recommendations.reduce((acc, r) => acc + r.allocatedMinutes, 0)).toBe(10);
+  });
 });

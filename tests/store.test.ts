@@ -163,6 +163,46 @@ describe('Storage and UserStore Engine', () => {
     expect(updated.lastPianoDate).toBe('2026-03-02');
   });
 
+  it('does not advance streak or total minutes when practice attempt is incorrect', () => {
+    const baseState: UserStoreState = {
+      ...INITIAL_STATE,
+      academicStreak: 5,
+      totalMinutesStudied: 100,
+      lastAcademicDate: '2026-03-01',
+    };
+
+    const incorrectAttempt: PracticeAttempt = {
+      skillId: 't1',
+      isCorrect: false,
+      responseTimeMs: 2000,
+      date: '2026-03-02T12:00:00.000Z',
+    };
+
+    const updated = recordPracticeAttemptInStore(baseState, incorrectAttempt, 2);
+    expect(updated.academicStreak).toBe(5);
+    expect(updated.totalMinutesStudied).toBe(100);
+    expect(updated.lastAcademicDate).toBe('2026-03-01');
+  });
+
+  it('resets piano streak when gap is more than 1 day', () => {
+    const baseState: UserStoreState = {
+      ...INITIAL_STATE,
+      pianoStreak: 7,
+      lastPianoDate: '2026-03-01',
+    };
+
+    const pianoAttempt: PracticeAttempt = {
+      skillId: 'p3_scale_c_maj',
+      isCorrect: true,
+      responseTimeMs: 1500,
+      date: '2026-03-05T12:00:00.000Z',
+    };
+
+    const updated = recordPracticeAttemptInStore(baseState, pianoAttempt);
+    expect(updated.pianoStreak).toBe(1);
+    expect(updated.lastPianoDate).toBe('2026-03-05');
+  });
+
   it('caps history list at 100 entries', () => {
     const state = { ...INITIAL_STATE, history: Array.from({ length: 100 }, (_, i) => ({
       skillId: `t1-${i}`,
