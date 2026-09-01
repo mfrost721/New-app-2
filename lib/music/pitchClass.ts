@@ -14,8 +14,8 @@ export type NoteName = typeof NOTE_NAMES[number] | typeof FLAT_NOTE_NAMES[number
  */
 export function noteToPitchClass(note: string): number {
   const rawClean = note.trim().toUpperCase();
-  // Strip octave digits if present at the end, e.g., "C4" -> "C", "F#3" -> "F#"
-  const clean = rawClean.replace(/\d+$/, '');
+  // Strip octave digits if present at the end, e.g., "C4" -> "C", "F#3" -> "F#", "C-1" -> "C"
+  const clean = rawClean.replace(/-?\d+$/, '');
   const map: Record<string, number> = {
     'C': 0, 'B#': 0,
     'C#': 1, 'DB': 1,
@@ -218,20 +218,20 @@ export function areSetsEquivalent(setA: number[], setB: number[]): { equivalent:
   if (!isSamePrime) return { equivalent: false };
 
   // Check Tn
-  const normA = getNormalOrder(setA);
-  const normB = getNormalOrder(setB);
+  const setAPcs = toPitchClassSet(setA);
+  const setBPcs = toPitchClassSet(setB);
 
   for (let n = 0; n < 12; n++) {
-    const tA = toPitchClassSet(transposeSet(normA, n));
-    if (tA.length === normB.length && tA.every((v, i) => v === normB[i])) {
+    const tA = toPitchClassSet(transposeSet(setAPcs, n));
+    if (tA.length === setBPcs.length && tA.every((v, i) => v === setBPcs[i])) {
       return { equivalent: true, transformation: `T${n}` };
     }
   }
 
   // Check TnI
   for (let n = 0; n < 12; n++) {
-    const tiA = toPitchClassSet(invertSet(normA, n));
-    if (tiA.length === normB.length && tiA.every((v, i) => v === normB[i])) {
+    const tiA = toPitchClassSet(invertSet(setAPcs, n));
+    if (tiA.length === setBPcs.length && tiA.every((v, i) => v === setBPcs[i])) {
       return { equivalent: true, transformation: `T${n}I` };
     }
   }

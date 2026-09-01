@@ -44,4 +44,27 @@ describe('Adaptive Practice Prescription Engine', () => {
     const sumMinutes = rx.recommendations.reduce((acc, r) => acc + r.allocatedMinutes, 0);
     expect(sumMinutes).toBe(20);
   });
+
+  it('filters out both Class Piano III and Class Piano IV skills when road mode is active', () => {
+    const mixedSkills: SkillItem[] = [
+      { id: 'p3_1', category: 'Class Piano III', topic: 'C Major Scale', mastery: 10, totalAttempts: 2, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+      { id: 'p4_1', category: 'Class Piano IV', topic: 'Eb Major Scale', mastery: 15, totalAttempts: 2, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+      { id: 't1', category: 'Theory IV', topic: 'Prime Form', mastery: 40, totalAttempts: 5, correctAttempts: 2, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+    ];
+
+    const rx = generatePracticePrescription(mixedSkills, 15, true);
+    const pianoRecs = rx.recommendations.filter(r => r.category.includes('Class Piano'));
+    expect(pianoRecs.length).toBe(0);
+    expect(rx.recommendations[0].topic).toBe('Prime Form');
+  });
+
+  it('handles short session durations (0 and 5 minutes) correctly', () => {
+    const rx0 = generatePracticePrescription(sampleSkills, 0, false);
+    expect(rx0.totalMinutes).toBe(0);
+    expect(rx0.recommendations.reduce((acc, r) => acc + r.allocatedMinutes, 0)).toBe(0);
+
+    const rx5 = generatePracticePrescription(sampleSkills, 5, false);
+    expect(rx5.totalMinutes).toBe(5);
+    expect(rx5.recommendations.reduce((acc, r) => acc + r.allocatedMinutes, 0)).toBe(5);
+  });
 });

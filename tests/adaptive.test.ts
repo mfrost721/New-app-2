@@ -44,16 +44,38 @@ describe('Adaptive Learning Engine & Mastery', () => {
     expect(updated.errorHistory).toContain('Inversion error');
   });
 
-  it('calculates category exam readiness', () => {
-    const skills: SkillItem[] = [
+  it('calculates category exam readiness and labels correctly across thresholds', () => {
+    // Category with no matching skills
+    const emptyReadiness = calculateExamReadiness([], 'Class Piano III');
+    expect(emptyReadiness.masteryPercentage).toBe(0);
+    expect(emptyReadiness.readinessLabel).toBe('LOW');
+    expect(emptyReadiness.passingProbability).toBe(25);
+
+    // Low mastery (<50)
+    const lowSkills: SkillItem[] = [{ ...dummySkill, mastery: 40, topic: 'Low Topic' }];
+    const lowRes = calculateExamReadiness(lowSkills, 'Theory IV');
+    expect(lowRes.readinessLabel).toBe('LOW');
+    expect(lowRes.passingProbability).toBe(43);
+
+    // Moderate mastery (>=50, <70)
+    const modSkills: SkillItem[] = [{ ...dummySkill, mastery: 60, topic: 'Mod Topic' }];
+    const modRes = calculateExamReadiness(modSkills, 'Theory IV');
+    expect(modRes.readinessLabel).toBe('MODERATE');
+
+    // High mastery (>=70, <85)
+    const highSkills: SkillItem[] = [{ ...dummySkill, mastery: 75, topic: 'High Topic' }];
+    const highRes = calculateExamReadiness(highSkills, 'Theory IV');
+    expect(highRes.readinessLabel).toBe('HIGH');
+
+    // Exam ready (>=85)
+    const readySkills: SkillItem[] = [
       { ...dummySkill, mastery: 80, topic: 'Topic A' },
       { ...dummySkill, mastery: 90, topic: 'Topic B' },
     ];
-    const readiness = calculateExamReadiness(skills, 'Theory IV');
-
-    expect(readiness.masteryPercentage).toBe(85);
-    expect(readiness.readinessLabel).toBe('EXAM READY');
-    expect(readiness.passingProbability).toBeGreaterThan(80);
+    const readyRes = calculateExamReadiness(readySkills, 'Theory IV');
+    expect(readyRes.masteryPercentage).toBe(85);
+    expect(readyRes.readinessLabel).toBe('EXAM READY');
+    expect(readyRes.passingProbability).toBeGreaterThan(80);
   });
 
   it('generates practice prescriptions excluding piano in Road Mode', () => {

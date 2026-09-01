@@ -110,3 +110,70 @@ describe('Grading & Adaptive Mastery Calculations', () => {
     expect(readiness.passingProbability).toBe(25);
   });
 });
+
+import { evaluateMidiSequence, PlayedNoteEvent } from '../lib/music/pianoGrading';
+
+describe('Piano Automated Sequence Grading Engine', () => {
+  it('handles empty target notes array gracefully', () => {
+    const result = evaluateMidiSequence([], []);
+    expect(result.score).toBe(100);
+    expect(result.passed).toBe(true);
+    expect(result.feedbackMessages).toContain('No target notes specified.');
+  });
+
+  it('evaluates completely correct MIDI note sequence', () => {
+    const targetNotes = [60, 62, 64, 65]; // C4, D4, E4, F4
+    const playedEvents: PlayedNoteEvent[] = [
+      { midi: 60, timestampMs: 0 },
+      { midi: 62, timestampMs: 300 },
+      { midi: 64, timestampMs: 600 },
+      { midi: 65, timestampMs: 900 },
+    ];
+
+    const result = evaluateMidiSequence(playedEvents, targetNotes, 100);
+    expect(result.score).toBe(100);
+    expect(result.correctCount).toBe(4);
+    expect(result.wrongNotes.length).toBe(0);
+    expect(result.missedNotes.length).toBe(0);
+  });
+
+  it('identifies octave errors vs wrong notes correctly', () => {
+    const targetNotes = [60, 64]; // C4, E4
+    const playedEvents: PlayedNoteEvent[] = [
+      { midi: 72, timestampMs: 0 }, // C5 (12 semitones up -> octave error)
+      { midi: 65, timestampMs: 300 }, // F4 (wrong note for E4)
+    ];
+
+    const result = evaluateMidiSequence(playedEvents, targetNotes);
+    expect(result.octaveErrors.length).toBe(1);
+    expect(result.octaveErrors[0].expectedMidi).toBe(60);
+    expect(result.wrongNotes.length).toBe(2); // Both C5 (octave error) and F4 count as wrong notes
+    expect(result.wrongNotes[1].expectedNote).toBe('E');
+  });
+
+  it('identifies missed notes when played sequence is truncated', () => {
+    const targetNotes = [60, 62, 64, 65];
+    const playedEvents: PlayedNoteEvent[] = [
+      { midi: 60, timestampMs: 0 },
+      { midi: 62, timestampMs: 300 },
+    ];
+
+    const result = evaluateMidiSequence(playedEvents, targetNotes);
+    expect(result.correctCount).toBe(2);
+    expect(result.missedNotes.length).toBe(2);
+    expect(result.missedNotes[0].expectedMidi).toBe(64);
+  });
+
+  it('detects timing hesitations between notes', () => {
+    const targetNotes = [60, 62];
+    // Expected quarter note interval at 120 bpm is 500ms
+    const playedEvents: PlayedNoteEvent[] = [
+      { midi: 60, timestampMs: 0 },
+      { midi: 62, timestampMs: 2500 }, // Huge 2.5s delay -> hesitation
+    ];
+
+    const result = evaluateMidiSequence(playedEvents, targetNotes, 120);
+    expect(result.timingErrors.length).toBe(1);
+    expect(result.timingErrors[0].issue).toBe('hesitation');
+  });
+});

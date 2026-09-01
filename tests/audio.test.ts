@@ -236,6 +236,61 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
       expect(evaluation.isCorrect).toBe(false);
       expect(evaluation.feedback).toContain('does not match target');
     });
+
+    it('evaluates multi-note target sequences correctly', () => {
+      const frameC4: PitchAnalysisResult = {
+        frequency: 261.63,
+        midi: 60,
+        pitchClass: 0,
+        octave: 4,
+        noteName: 'C',
+        fullName: 'C4',
+        centsDeviation: 0,
+        clarity: 0.9,
+        solfege: 'Do',
+        scaleDegree: '1',
+      };
+      const frameE4: PitchAnalysisResult = {
+        frequency: 329.63,
+        midi: 64,
+        pitchClass: 4,
+        octave: 4,
+        noteName: 'E',
+        fullName: 'E4',
+        centsDeviation: 0,
+        clarity: 0.9,
+        solfege: 'Mi',
+        scaleDegree: '3',
+      };
+
+      const frames = [frameC4, frameC4, frameE4, frameE4];
+      const evaluation = evaluateSungPitch(frames, [60, 64]);
+
+      expect(evaluation.isCorrect).toBe(true);
+      expect(evaluation.pitchScore).toBe(100);
+      expect(evaluation.feedback).toContain('Sequence sung accurately');
+    });
+
+    it('penalizes sung pitch when cents deviation exceeds tolerance', () => {
+      const frameOffPitch: PitchAnalysisResult = {
+        frequency: 268.0,
+        midi: 60,
+        pitchClass: 0,
+        octave: 4,
+        noteName: 'C',
+        fullName: 'C4',
+        centsDeviation: 55, // 55 cents sharp (> 50 cents default tolerance)
+        clarity: 0.9,
+        solfege: 'Do',
+        scaleDegree: '1',
+      };
+
+      const frames = [frameOffPitch, frameOffPitch, frameOffPitch];
+      const evaluation = evaluateSungPitch(frames, 60, { toleranceCents: 50 });
+
+      expect(evaluation.isCorrect).toBe(false);
+      expect(evaluation.feedback).toContain('Pitch deviation too wide');
+    });
   });
 });
 

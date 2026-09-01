@@ -5,6 +5,7 @@ import {
   getPrimeForm,
   getIntervalVector,
   areSetsEquivalent,
+  isZRelatedPair,
 } from '../lib/music/pitchClass';
 import {
   getRowTransformation,
@@ -20,6 +21,8 @@ describe('Pitch Class & Set Theory Edge Cases', () => {
     expect(noteToPitchClass('F#3')).toBe(6);
     expect(noteToPitchClass('  bb5 ')).toBe(10);
     expect(noteToPitchClass('eb2')).toBe(3);
+    expect(noteToPitchClass('C-1')).toBe(0);
+    expect(noteToPitchClass('F#-1')).toBe(6);
     expect(() => noteToPitchClass('UNKNOWN')).toThrow('Invalid note name or integer');
   });
 
@@ -44,10 +47,22 @@ describe('Pitch Class & Set Theory Edge Cases', () => {
     expect(getIntervalVector([0, 1, 4, 6])).toEqual([1, 1, 1, 1, 1, 1]);
   });
 
-  it('detects set non-equivalence properly', () => {
-    const res = areSetsEquivalent([0, 4, 7], [0, 1, 2]);
-    expect(res.equivalent).toBe(false);
-    expect(res.transformation).toBeUndefined();
+  it('detects set equivalence and transformations properly', () => {
+    const resUnequal = areSetsEquivalent([0, 4, 7], [0, 1, 2]);
+    expect(resUnequal.equivalent).toBe(false);
+    expect(resUnequal.transformation).toBeUndefined();
+
+    // C major triad [0, 4, 7] transposed by 7 semitones is G major triad [7, 11, 2]
+    const resT7 = areSetsEquivalent([0, 4, 7], [7, 11, 2]);
+    expect(resT7.equivalent).toBe(true);
+    expect(resT7.transformation).toBe('T7');
+  });
+
+  it('identifies Z-related pitch class sets', () => {
+    // 4-Z15 [0, 1, 4, 6] and 4-Z29 [0, 1, 3, 7] share ICV <1 1 1 1 1 1> but are non-equivalent
+    expect(isZRelatedPair([0, 1, 4, 6], [0, 1, 3, 7])).toBe(true);
+    // Equivalent sets are not Z-related pairs
+    expect(isZRelatedPair([0, 4, 7], [7, 11, 2])).toBe(false);
   });
 });
 
