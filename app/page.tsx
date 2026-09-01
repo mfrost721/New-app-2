@@ -47,7 +47,7 @@ export default function HomeDashboard() {
         <div className="flex items-center space-x-3">
           <Link
             href="/theory"
-            className="flex items-center space-x-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-all shadow-lg hover:shadow-amber-500/20"
+            className="flex items-center space-x-2 px-5 py-3 min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-all shadow-lg hover:shadow-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
           >
             <Zap className="w-4 h-4" />
             <span>Start Drill</span>
