@@ -148,3 +148,117 @@ export function classifyNonHarmonicTone(
 
   return 'changing tone';
 }
+
+export type CadenceType =
+  | 'Perfect Authentic Cadence (PAC)'
+  | 'Imperfect Authentic Cadence (IAC)'
+  | 'Half Cadence (HC)'
+  | 'Plagal Cadence (PC)'
+  | 'Deceptive Cadence (DC)';
+
+export interface CadenceDefinition {
+  type: CadenceType;
+  chords: string; // e.g., "V - I"
+  description: string;
+}
+
+export const CADENCE_DEFINITIONS: Record<CadenceType, CadenceDefinition> = {
+  'Perfect Authentic Cadence (PAC)': {
+    type: 'Perfect Authentic Cadence (PAC)',
+    chords: 'V(7) - I',
+    description: 'Root position V to I, with tonic in top voice of final chord.',
+  },
+  'Imperfect Authentic Cadence (IAC)': {
+    type: 'Imperfect Authentic Cadence (IAC)',
+    chords: 'V(7) - I',
+    description: 'V to I progression where either chord is inverted or tonic is not in top voice.',
+  },
+  'Half Cadence (HC)': {
+    type: 'Half Cadence (HC)',
+    chords: 'Any - V',
+    description: 'Phrase ends on a Dominant V chord (creates expectation of resolution).',
+  },
+  'Plagal Cadence (PC)': {
+    type: 'Plagal Cadence (PC)',
+    chords: 'IV - I',
+    description: 'Subdominant IV resolving to Tonic I ("Amen cadence").',
+  },
+  'Deceptive Cadence (DC)': {
+    type: 'Deceptive Cadence (DC)',
+    chords: 'V - vi (or VI in minor)',
+    description: 'Dominant V resolves unexpectedly to Submediant vi/VI instead of Tonic.',
+  },
+};
+
+export interface KeySignatureInfo {
+  key: string;
+  type: 'major' | 'minor';
+  accidentalsCount: number;
+  accidentalType: 'sharps' | 'flats' | 'none';
+  accidentalNotes: string[];
+}
+
+export const KEY_SIGNATURES: Record<string, KeySignatureInfo> = {
+  'C major': { key: 'C major', type: 'major', accidentalsCount: 0, accidentalType: 'none', accidentalNotes: [] },
+  'G major': { key: 'G major', type: 'major', accidentalsCount: 1, accidentalType: 'sharps', accidentalNotes: ['F#'] },
+  'D major': { key: 'D major', type: 'major', accidentalsCount: 2, accidentalType: 'sharps', accidentalNotes: ['F#', 'C#'] },
+  'A major': { key: 'A major', type: 'major', accidentalsCount: 3, accidentalType: 'sharps', accidentalNotes: ['F#', 'C#', 'G#'] },
+  'E major': { key: 'E major', type: 'major', accidentalsCount: 4, accidentalType: 'sharps', accidentalNotes: ['F#', 'C#', 'G#', 'D#'] },
+  'B major': { key: 'B major', type: 'major', accidentalsCount: 5, accidentalType: 'sharps', accidentalNotes: ['F#', 'C#', 'G#', 'D#', 'A#'] },
+  'F# major': { key: 'F# major', type: 'major', accidentalsCount: 6, accidentalType: 'sharps', accidentalNotes: ['F#', 'C#', 'G#', 'D#', 'A#', 'E#'] },
+  'C# major': { key: 'C# major', type: 'major', accidentalsCount: 7, accidentalType: 'sharps', accidentalNotes: ['F#', 'C#', 'G#', 'D#', 'A#', 'E#', 'B#'] },
+
+  'F major': { key: 'F major', type: 'major', accidentalsCount: 1, accidentalType: 'flats', accidentalNotes: ['Bb'] },
+  'Bb major': { key: 'Bb major', type: 'major', accidentalsCount: 2, accidentalType: 'flats', accidentalNotes: ['Bb', 'Eb'] },
+  'Eb major': { key: 'Eb major', type: 'major', accidentalsCount: 3, accidentalType: 'flats', accidentalNotes: ['Bb', 'Eb', 'Ab'] },
+  'Ab major': { key: 'Ab major', type: 'major', accidentalsCount: 4, accidentalType: 'flats', accidentalNotes: ['Bb', 'Eb', 'Ab', 'Db'] },
+  'Db major': { key: 'Db major', type: 'major', accidentalsCount: 5, accidentalType: 'flats', accidentalNotes: ['Bb', 'Eb', 'Ab', 'Db', 'Gb'] },
+  'Gb major': { key: 'Gb major', type: 'major', accidentalsCount: 6, accidentalType: 'flats', accidentalNotes: ['Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'] },
+  'Cb major': { key: 'Cb major', type: 'major', accidentalsCount: 7, accidentalType: 'flats', accidentalNotes: ['Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb'] },
+
+  'A minor': { key: 'A minor', type: 'minor', accidentalsCount: 0, accidentalType: 'none', accidentalNotes: [] },
+  'E minor': { key: 'E minor', type: 'minor', accidentalsCount: 1, accidentalType: 'sharps', accidentalNotes: ['F#'] },
+  'B minor': { key: 'B minor', type: 'minor', accidentalsCount: 2, accidentalType: 'sharps', accidentalNotes: ['F#', 'C#'] },
+  'F# minor': { key: 'F# minor', type: 'minor', accidentalsCount: 3, accidentalType: 'sharps', accidentalNotes: ['F#', 'C#', 'G#'] },
+  'C# minor': { key: 'C# minor', type: 'minor', accidentalsCount: 4, accidentalType: 'sharps', accidentalNotes: ['F#', 'C#', 'G#', 'D#'] },
+  'G# minor': { key: 'G# minor', type: 'minor', accidentalsCount: 5, accidentalType: 'sharps', accidentalNotes: ['F#', 'C#', 'G#', 'D#', 'A#'] },
+
+  'D minor': { key: 'D minor', type: 'minor', accidentalsCount: 1, accidentalType: 'flats', accidentalNotes: ['Bb'] },
+  'G minor': { key: 'G minor', type: 'minor', accidentalsCount: 2, accidentalType: 'flats', accidentalNotes: ['Bb', 'Eb'] },
+  'C minor': { key: 'C minor', type: 'minor', accidentalsCount: 3, accidentalType: 'flats', accidentalNotes: ['Bb', 'Eb', 'Ab'] },
+  'F minor': { key: 'F minor', type: 'minor', accidentalsCount: 4, accidentalType: 'flats', accidentalNotes: ['Bb', 'Eb', 'Ab', 'Db'] },
+};
+
+export type IntervalQuality = 'P' | 'm' | 'M' | 'A' | 'd';
+
+export interface IntervalDefinition {
+  name: string;
+  semitones: number;
+  quality: IntervalQuality;
+  genericNumber: number; // 1 to 8
+}
+
+export const INTERVAL_TABLE: Record<number, { defaultName: string; quality: IntervalQuality; genericNumber: number }> = {
+  0: { defaultName: 'Perfect Unison', quality: 'P', genericNumber: 1 },
+  1: { defaultName: 'Minor 2nd', quality: 'm', genericNumber: 2 },
+  2: { defaultName: 'Major 2nd', quality: 'M', genericNumber: 2 },
+  3: { defaultName: 'Minor 3rd', quality: 'm', genericNumber: 3 },
+  4: { defaultName: 'Major 3rd', quality: 'M', genericNumber: 3 },
+  5: { defaultName: 'Perfect 4th', quality: 'P', genericNumber: 4 },
+  6: { defaultName: 'Tritone / Augmented 4th', quality: 'A', genericNumber: 4 },
+  7: { defaultName: 'Perfect 5th', quality: 'P', genericNumber: 5 },
+  8: { defaultName: 'Minor 6th', quality: 'm', genericNumber: 6 },
+  9: { defaultName: 'Major 6th', quality: 'M', genericNumber: 6 },
+  10: { defaultName: 'Minor 7th', quality: 'm', genericNumber: 7 },
+  11: { defaultName: 'Major 7th', quality: 'M', genericNumber: 7 },
+  12: { defaultName: 'Perfect Octave', quality: 'P', genericNumber: 8 },
+};
+
+/**
+ * Calculates semitone distance between two note names (spelling-sensitive or pitch class based).
+ */
+export function getIntervalSemitones(note1: string, note2: string): number {
+  const pc1 = noteToPitchClass(note1);
+  const pc2 = noteToPitchClass(note2);
+  return (pc2 - pc1 + 12) % 12;
+}

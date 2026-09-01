@@ -22,9 +22,11 @@ export function generatePracticePrescription(
   totalMinutes: number = 20,
   isRoadMode: boolean = false
 ): SessionPrescription {
+  const normalizedTotalMinutes = Math.max(0, Math.floor(totalMinutes));
+
   // Filter out piano technique if in Road Mode
   let eligibleSkills = isRoadMode
-    ? skills.filter(s => s.category !== 'Class Piano IV')
+    ? skills.filter(s => s.category !== 'Class Piano IV' && s.category !== 'Class Piano III')
     : [...skills];
 
   if (eligibleSkills.length === 0) {
@@ -37,23 +39,28 @@ export function generatePracticePrescription(
 
   if (selectedSkills.length === 0) {
     return {
-      totalMinutes,
+      totalMinutes: normalizedTotalMinutes,
       recommendations: [
         {
           topic: 'Pitch-Class Set Theory',
           category: 'Theory IV',
-          allocatedMinutes: totalMinutes,
+          allocatedMinutes: normalizedTotalMinutes,
           reason: 'Initial baseline setup',
         },
       ],
     };
   }
 
-  const minutesPerTopic = Math.max(3, Math.floor(totalMinutes / selectedSkills.length));
+  const selectedCount = selectedSkills.length;
+  const minutesPerTopic = normalizedTotalMinutes >= selectedCount * 3
+    ? Math.max(3, Math.floor(normalizedTotalMinutes / selectedCount))
+    : Math.floor(normalizedTotalMinutes / selectedCount);
+  const remainder = normalizedTotalMinutes - minutesPerTopic * selectedCount;
 
   const recommendations: PracticeRecommendation[] = selectedSkills.map((s, idx) => {
-    // Add leftover minutes to the first/weakest topic
-    const extra = idx === 0 ? totalMinutes - minutesPerTopic * selectedSkills.length : 0;
+    const extra = normalizedTotalMinutes >= selectedCount * 3
+      ? (idx === 0 ? remainder : 0)
+      : (idx < remainder ? 1 : 0);
     return {
       topic: s.topic,
       category: s.category,
@@ -64,5 +71,5 @@ export function generatePracticePrescription(
     };
   });
 
-  return { totalMinutes, recommendations };
+  return { totalMinutes: normalizedTotalMinutes, recommendations };
 }
