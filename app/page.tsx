@@ -15,17 +15,33 @@ export default function HomeDashboard() {
     setStore(loaded);
   }, []);
 
-  if (!store) return <div className="p-8 text-center text-slate-400">Loading Frost Music Lab...</div>;
+  const theoryReadiness = React.useMemo(
+    () => (store ? calculateExamReadiness(store.skills, 'Theory IV') : null),
+    [store]
+  );
+  const auralReadiness = React.useMemo(
+    () => (store ? calculateExamReadiness(store.skills, 'Aural Skills IV') : null),
+    [store]
+  );
+  const pianoReadiness = React.useMemo(
+    () => (store ? calculateExamReadiness(store.skills, 'Class Piano IV') : null),
+    [store]
+  );
 
-  const theoryReadiness = calculateExamReadiness(store.skills, 'Theory IV');
-  const auralReadiness = calculateExamReadiness(store.skills, 'Aural Skills IV');
-  const pianoReadiness = calculateExamReadiness(store.skills, 'Class Piano IV');
+  const prescription = React.useMemo(
+    () => (store ? generatePracticePrescription(store.skills, 20, store.isRoadMode) : null),
+    [store]
+  );
 
-  const prescription = generatePracticePrescription(store.skills, 20, store.isRoadMode);
+  const daysLeft = React.useMemo(() => {
+    if (!store) return 0;
+    const examDateObj = new Date(store.examDate);
+    return Math.max(0, Math.ceil((examDateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+  }, [store]);
 
-  // Countdown calculations (Target: Dec 8, 2026 or custom)
-  const examDateObj = new Date(store.examDate);
-  const daysLeft = Math.max(0, Math.ceil((examDateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+  if (!store || !theoryReadiness || !auralReadiness || !pianoReadiness || !prescription) {
+    return <div className="p-8 text-center text-slate-400">Loading Frost Music Lab...</div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -47,7 +63,7 @@ export default function HomeDashboard() {
         <div className="flex items-center space-x-3">
           <Link
             href="/theory"
-            className="flex items-center space-x-2 px-5 py-3 min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-all shadow-lg hover:shadow-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+            className="flex items-center space-x-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-all shadow-lg hover:shadow-amber-500/20"
           >
             <Zap className="w-4 h-4" />
             <span>Start Drill</span>

@@ -13,9 +13,8 @@ export default function AnalyticsPage() {
     });
   }, []);
 
-  if (!store) return <div className="p-8 text-center text-slate-400">Loading analytics...</div>;
-
-  const exportDataJson = () => {
+  const exportDataJson = React.useCallback(() => {
+    if (!store) return;
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(store, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
@@ -23,9 +22,14 @@ export default function AnalyticsPage() {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-  };
+  }, [store]);
 
-  const weakestSkills = [...store.skills].sort((a, b) => a.mastery - b.mastery).slice(0, 5);
+  const weakestSkills = React.useMemo(() => {
+    if (!store) return [];
+    return [...store.skills].sort((a, b) => a.mastery - b.mastery).slice(0, 5);
+  }, [store]);
+
+  if (!store) return <div className="p-8 text-center text-slate-400">Loading analytics...</div>;
 
   return (
     <div className="space-y-8">
@@ -41,9 +45,8 @@ export default function AnalyticsPage() {
         </div>
 
         <button
-          type="button"
           onClick={exportDataJson}
-          className="px-4 py-2.5 min-h-[44px] bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+          className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all"
         >
           <Download className="w-4 h-4 text-amber-400" />
           <span>Export Practice Data (JSON)</span>

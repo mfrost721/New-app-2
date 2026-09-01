@@ -6,21 +6,37 @@ import ScoreViewer from '@/components/ScoreViewer';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
 import { Piano, Check, Clock, RotateCcw } from 'lucide-react';
 
+const KEYS_LIST = ['Eb Major', 'F# Minor (Harmonic)', 'Ab Major', 'C# Minor (Melodic)', 'D Diminished 7th'];
+
 export default function PianoPage() {
   const [activeTab, setActiveTab] = useState<'technique' | 'harmonization' | 'happyBirthday' | 'sightReading'>('technique');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Technique Gauntlet state
-  const keysList = ['Eb Major', 'F# Minor (Harmonic)', 'Ab Major', 'C# Minor (Melodic)', 'D Diminished 7th'];
   const [currentPromptIdx, setCurrentPromptIdx] = useState<number>(0);
   const [previewCountdown, setPreviewCountdown] = useState<number | null>(null);
+  const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
 
   const startPreviewTimer = () => {
+    if (timerRef.current !== null) {
+      clearInterval(timerRef.current);
+    }
     setPreviewCountdown(20);
-    const interval = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setPreviewCountdown(prev => {
         if (prev === null || prev <= 1) {
-          clearInterval(interval);
+          if (timerRef.current !== null) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
           return 0;
         }
         return prev - 1;
@@ -55,40 +71,28 @@ export default function PianoPage() {
         </div>
 
         {/* Tab Switcher */}
-        <div role="tablist" aria-label="Class piano drill sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
+        <div className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto">
           <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'technique'}
             onClick={() => setActiveTab('technique')}
-            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'technique' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'technique' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Technique Gauntlet
           </button>
           <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'harmonization'}
             onClick={() => setActiveTab('harmonization')}
-            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'harmonization' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'harmonization' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Harmonization & Transposition
           </button>
           <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'happyBirthday'}
             onClick={() => setActiveTab('happyBirthday')}
-            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'happyBirthday' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'happyBirthday' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Happy Birthday Project
           </button>
           <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'sightReading'}
             onClick={() => setActiveTab('sightReading')}
-            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'sightReading' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'sightReading' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Sight-Reading Simulator
           </button>
@@ -96,7 +100,7 @@ export default function PianoPage() {
       </div>
 
       {feedback && (
-        <div role="status" aria-live="polite" className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-bold flex items-center space-x-2">
+        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-bold flex items-center space-x-2">
           <Check className="w-4 h-4" />
           <span>{feedback}</span>
         </div>
@@ -108,15 +112,14 @@ export default function PianoPage() {
           <div className="flex justify-between items-center">
             <div>
               <span className="text-xs text-amber-400 font-bold uppercase tracking-wider">Random Key Technique Prompt</span>
-              <h2 className="text-3xl font-black text-slate-100 mt-1">{keysList[currentPromptIdx]}</h2>
+              <h2 className="text-3xl font-black text-slate-100 mt-1">{KEYS_LIST[currentPromptIdx]}</h2>
               <p className="text-xs text-slate-400 mt-1">
                 2 Octaves • Hands Together • Standard Fingering • Quarter Note = 100 bpm.
               </p>
             </div>
             <button
-              type="button"
-              onClick={() => setCurrentPromptIdx((currentPromptIdx + 1) % keysList.length)}
-              className="px-4 py-2.5 min-h-[44px] bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs flex items-center space-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              onClick={() => setCurrentPromptIdx((currentPromptIdx + 1) % KEYS_LIST.length)}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs flex items-center space-x-1"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Next Random Key</span>
@@ -148,9 +151,8 @@ export default function PianoPage() {
           </div>
 
           <button
-            type="button"
             onClick={() => handleRecordSuccess('p1')}
-            className="w-full py-3 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+            className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all"
           >
             Certify Scale & Arpeggio Performance
           </button>
@@ -165,9 +167,8 @@ export default function PianoPage() {
             <h3 className="text-sm font-bold text-slate-100">Transposition Command</h3>
             <p className="text-xs text-slate-400">Now transpose the harmonization up a whole step to A Major.</p>
             <button
-              type="button"
               onClick={() => handleRecordSuccess('p4')}
-              className="px-5 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs"
             >
               Certify Transposition Performance
             </button>
@@ -195,9 +196,8 @@ export default function PianoPage() {
           </div>
 
           <button
-            type="button"
             onClick={() => handleRecordSuccess('p5')}
-            className="w-full py-3 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+            className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm"
           >
             Certify Happy Birthday Practice Attempt
           </button>
@@ -214,15 +214,14 @@ export default function PianoPage() {
             </div>
             {previewCountdown === null ? (
               <button
-                type="button"
                 onClick={startPreviewTimer}
-                className="px-4 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs flex items-center space-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs flex items-center space-x-1"
               >
                 <Clock className="w-4 h-4" />
                 <span>Start 20s Exam Preview</span>
               </button>
             ) : (
-              <div role="timer" aria-live="polite" className="px-4 py-2.5 min-h-[44px] flex items-center bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl font-mono font-bold text-sm">
+              <div className="px-4 py-2 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl font-mono font-bold text-sm">
                 Preview Timer: {previewCountdown}s
               </div>
             )}
@@ -231,9 +230,8 @@ export default function PianoPage() {
           <ScoreViewer title="Unseen Level III Sight-Reading Score Excerpt" />
 
           <button
-            type="button"
             onClick={() => handleRecordSuccess('p6')}
-            className="w-full py-3 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+            className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm"
           >
             Complete Sight-Reading Attempt
           </button>

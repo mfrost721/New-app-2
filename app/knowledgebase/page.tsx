@@ -60,11 +60,14 @@ const ARTICLES: KnowledgeArticle[] = [
 export default function KnowledgeBasePage() {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filtered = ARTICLES.filter(a =>
-    a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = React.useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return ARTICLES.filter(a =>
+      a.title.toLowerCase().includes(term) ||
+      a.summary.toLowerCase().includes(term) ||
+      a.category.toLowerCase().includes(term)
+    );
+  }, [searchTerm]);
 
   return (
     <div className="space-y-8">
@@ -82,22 +85,20 @@ export default function KnowledgeBasePage() {
 
       {/* Search Input */}
       <div className="relative max-w-xl">
-        <label htmlFor="kb-search" className="sr-only">Search Knowledge Base Topics</label>
         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
-          id="kb-search"
           type="text"
           placeholder="Search topics, e.g. pitch-class vector, 6/4 chord, fingering..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 min-h-[44px] bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          className="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
         />
       </div>
 
       {/* Articles Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filtered.map((article) => (
-          <article key={article.id} className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
+          <div key={article.id} className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
             <div>
               <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded">
                 {article.category}
@@ -108,12 +109,12 @@ export default function KnowledgeBasePage() {
 
             <Link
               href={article.drillUrl}
-              className="inline-flex items-center space-x-1.5 min-h-[44px] text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors pt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg"
+              className="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors pt-2"
             >
               <span>Practice This Concept</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
-          </article>
+          </div>
         ))}
       </div>
     </div>
