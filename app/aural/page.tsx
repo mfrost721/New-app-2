@@ -1,25 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import KeyboardVisualizer from '@/components/KeyboardVisualizer';
 import ScoreViewer from '@/components/ScoreViewer';
 import { soundEngine } from '@/lib/audio/soundEngine';
 import { autoCorrelate, PitchAnalysisResult } from '@/lib/audio/pitchDetection';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
-import { Mic, Volume2, Play, Check, RefreshCw, Activity, Music, Radio } from 'lucide-react';
+import { Mic, Volume2, Check } from 'lucide-react';
 
 export default function AuralPage() {
   const [activeTab, setActiveTab] = useState<'noteInKey' | 'chordsAnd64' | 'dictation' | 'sightSinging'>('noteInKey');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Note-in-key ladder state
-  const [targetDegree, setTargetDegree] = useState<number>(4); // Mi (3rd degree)
-  const [playedCadence, setPlayedCadence] = useState(false);
+  const targetDegree = 4; // Mi (3rd degree)
 
   // Sight singing microphone pitch detection state
   const [isRecording, setIsRecording] = useState(false);
   const [pitchResult, setPitchResult] = useState<PitchAnalysisResult | null>(null);
-  const [singingScore, setSingingScore] = useState<{ pitch: number; rhythm: number; total: number } | null>(null);
+  const singingScore = null as { pitch: number; rhythm: number; total: number } | null;
 
   // Cadence playback for Note-in-Key
   const playCadence = () => {
@@ -30,7 +28,6 @@ export default function AuralPage() {
     setTimeout(() => soundEngine.playChord([60, 64, 67], 0.8), 1800); // C
     setTimeout(() => {
       soundEngine.playNote(60 + targetDegree, 1.2);
-      setPlayedCadence(true);
     }, 2600);
   };
 
@@ -73,7 +70,7 @@ export default function AuralPage() {
         setIsRecording(false);
         // Note: Raw mic pitch evaluation prototype - actual sung score depends on pitch analysis matching.
       }, 5000);
-    } catch (err) {
+    } catch {
       alert('Microphone access is required for Sight-Singing Studio.');
     }
   };

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { loadUserStore, saveUserStore, UserStoreState } from '@/lib/storage/store';
-import { Music, Mic, Piano, BookOpen, BarChart3, ShieldAlert, Smartphone, Home, Zap } from 'lucide-react';
+import { Music, Mic, Piano, BookOpen, BarChart3, Smartphone, Home } from 'lucide-react';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<UserStoreState | null>(null);

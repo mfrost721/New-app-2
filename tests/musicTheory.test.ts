@@ -110,6 +110,19 @@ describe('Scales and Modes Engine', () => {
     expect(identified?.tonicNote).toBe('D');
     expect(identified?.mode).toBe('Dorian');
   });
+
+  it('handles flat note spelling for Bb and Db scales', () => {
+    const bbIonian = buildScale('Bb', 'Ionian');
+    expect(bbIonian.noteNames).toContain('Bb');
+    expect(bbIonian.noteNames).toContain('Eb');
+
+    const dbIonian = buildScale('Db', 'Ionian');
+    expect(dbIonian.noteNames).toContain('Db');
+    expect(dbIonian.noteNames).toContain('Eb');
+    expect(dbIonian.noteNames).toContain('Gb');
+    expect(dbIonian.noteNames).toContain('Ab');
+    expect(dbIonian.noteNames).toContain('Bb');
+  });
 });
 
 describe('Chords and Harmony Engine', () => {
@@ -120,6 +133,12 @@ describe('Chords and Harmony Engine', () => {
 
     const gDom7Inversion1 = spellChord('G', 'major-minor', 1); // 1st inversion G7: B in bass
     expect(gDom7Inversion1.bassNote).toBe('B');
+  });
+
+  it('spells flat root chords correctly', () => {
+    const bbMaj = spellChord('Bb', 'major', 0);
+    expect(bbMaj.root).toBe('Bb');
+    expect(bbMaj.bassNote).toBe('Bb');
   });
 
   it('generates secondary dominants', () => {
