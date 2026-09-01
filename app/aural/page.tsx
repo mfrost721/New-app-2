@@ -16,6 +16,7 @@ export default function AuralPage() {
 
   // Sight singing microphone pitch detection state
   const [isRecording, setIsRecording] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
   const [pitchResult, setPitchResult] = useState<PitchAnalysisResult | null>(null);
   const singingScore = null as { pitch: number; rhythm: number; total: number } | null;
 
@@ -42,10 +43,21 @@ export default function AuralPage() {
   }, [activeStream]);
 
   const handleMicStart = async () => {
+    setMicError(null);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setMicError('Microphone audio input is not supported by your browser or environment.');
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setActiveStream(stream);
-      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const audioCtx = new AudioContextClass();
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 2048;
@@ -66,11 +78,13 @@ export default function AuralPage() {
         clearInterval(interval);
         stream.getTracks().forEach(t => t.stop());
         setActiveStream(null);
-        audioCtx.close();
+        void audioCtx.close();
         setIsRecording(false);
       }, 5000);
-    } catch {
-      alert('Microphone access is required for Sight-Singing Studio.');
+    } catch (err: unknown) {
+      setIsRecording(false);
+      const errorMessage = err instanceof Error ? err.message : 'Microphone permission was denied or unavailable.';
+      setMicError(`Microphone access failed: ${errorMessage}`);
     }
   };
 
@@ -101,32 +115,40 @@ export default function AuralPage() {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto">
+        <div role="tablist" aria-label="Aural skills drill sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'noteInKey'}
             onClick={() => setActiveTab('noteInKey')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'noteInKey' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'noteInKey' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Note-in-Key
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'chordsAnd64'}
             onClick={() => setActiveTab('chordsAnd64')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'chordsAnd64' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'chordsAnd64' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Chords & 6/4 Functions
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'dictation'}
             onClick={() => setActiveTab('dictation')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'dictation' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'dictation' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Melodic Dictation
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'sightSinging'}
             onClick={() => setActiveTab('sightSinging')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'sightSinging' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'sightSinging' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Sight-Singing Studio
           </button>
@@ -134,9 +156,15 @@ export default function AuralPage() {
       </div>
 
       {feedback && (
-        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-bold flex items-center space-x-2">
+        <div role="status" aria-live="polite" className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-bold flex items-center space-x-2">
           <Check className="w-4 h-4" />
           <span>{feedback}</span>
+        </div>
+      )}
+
+      {micError && (
+        <div role="alert" aria-live="assertive" className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-xl font-bold flex items-center space-x-2">
+          <span>⚠️ {micError}</span>
         </div>
       )}
 
@@ -267,9 +295,10 @@ export default function AuralPage() {
               type="button"
               onClick={handleMicStart}
               disabled={isRecording}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2 transition-all ${
+              aria-label={isRecording ? 'Listening to audio' : 'Start microphone recording'}
+              className={`px-5 py-2.5 min-h-[44px] rounded-xl font-bold text-xs flex items-center space-x-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
                 isRecording
-                  ? 'bg-rose-500 text-white animate-pulse'
+                  ? 'bg-rose-500 text-white animate-pulse motion-reduce:animate-none'
                   : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
               }`}
             >
@@ -282,7 +311,7 @@ export default function AuralPage() {
 
           {/* Real-time detected Pitch Display */}
           {pitchResult && (
-            <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between font-mono text-xs">
+            <div role="status" aria-live="polite" className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between font-mono text-xs">
               <div>
                 <span className="text-slate-400">Detected Pitch: </span>
                 <span className="text-amber-400 font-bold text-base">{pitchResult.noteName}</span>
