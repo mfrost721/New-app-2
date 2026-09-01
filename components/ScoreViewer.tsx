@@ -18,7 +18,7 @@ interface ScoreViewerProps {
   onNoteClick?: (index: number) => void;
 }
 
-export default function ScoreViewer({
+function ScoreViewer({
   title = 'Excerpt Analysis',
   clef = 'treble',
   timeSignature = [4, 4],
@@ -105,3 +105,5 @@ export default function ScoreViewer({
     </div>
   );
 }
+
+export default React.memo(ScoreViewer);

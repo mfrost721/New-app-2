@@ -17,6 +17,8 @@ import {
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
 import { Brain, Check, Clock, Sparkles, HelpCircle, ArrowRight, RotateCcw } from 'lucide-react';
 
+const SAMPLE_ROW = [0, 11, 7, 8, 2, 1, 9, 10, 4, 3, 5, 6];
+
 export default function TheoryPage() {
   const [activeTab, setActiveTab] = useState<'drills' | 'setTheory' | 'matrixSpeedRun' | 'modes' | 'scoreAnalysis'>('drills');
 
@@ -32,7 +34,6 @@ export default function TheoryPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Matrix Speed Run state
-  const sampleRow = [0, 11, 7, 8, 2, 1, 9, 10, 4, 3, 5, 6];
   const [userAnswer, setUserAnswer] = useState<string>('');
   const [matrixResult, setMatrixResult] = useState<string | null>(null);
 
@@ -50,9 +51,17 @@ export default function TheoryPage() {
     );
   };
 
-  const currentNormal = getNormalOrder(selectedPcs);
-  const currentPrime = getPrimeForm(selectedPcs);
-  const currentVector = getIntervalVector(selectedPcs);
+  const { currentNormal, currentPrime, formattedVector } = useMemo(() => {
+    const normal = getNormalOrder(selectedPcs);
+    const prime = getPrimeForm(selectedPcs);
+    const vector = getIntervalVector(selectedPcs);
+    const formatted = formatIntervalVector(vector);
+    return {
+      currentNormal: normal,
+      currentPrime: prime,
+      formattedVector: formatted,
+    };
+  }, [selectedPcs]);
 
   const handleRecordSuccess = (skillId: string) => {
     const store = loadUserStore();
@@ -322,7 +331,7 @@ export default function TheoryPage() {
 
               <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center">
                 <span className="text-slate-400">Interval-Class Vector:</span>
-                <span className="text-sky-400 font-bold">{formatIntervalVector(currentVector)}</span>
+                <span className="text-sky-400 font-bold">{formattedVector}</span>
               </div>
             </div>
 
@@ -350,7 +359,7 @@ export default function TheoryPage() {
             </div>
           </div>
 
-          <MatrixGrid p0Row={sampleRow} showNotes={true} />
+          <MatrixGrid p0Row={SAMPLE_ROW} showNotes={true} />
 
           <div className="flex space-x-3 max-w-md">
             <input
