@@ -3,8 +3,7 @@
  * Manages user state, skills mastery, practice logs, streaks, and settings.
  */
 
-import { SkillItem, PracticeAttempt, updateSkillMastery, calculateExamReadiness, ExamReadiness } from '../adaptive/mastery';
-import { generatePracticePrescription, SessionPrescription } from '../adaptive/practicePrescription';
+import { SkillItem, PracticeAttempt, updateSkillMastery } from '../adaptive/mastery';
 
 export interface UserStoreState {
   examDate: string; // ISO date format, default 2026-12-08
@@ -93,7 +92,7 @@ export function recordPracticeAttemptInStore(
   const newSkills = currentState.skills.map(s => (s.id === attempt.skillId ? updatedSkill : s));
   const newHistory = [attempt, ...currentState.history.slice(0, 99)];
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = attempt.date ? attempt.date.split('T')[0] : new Date().toISOString().split('T')[0];
   let academicStreak = currentState.academicStreak;
   let pianoStreak = currentState.pianoStreak;
 
@@ -104,19 +103,21 @@ export function recordPracticeAttemptInStore(
     return Math.floor((curr - past) / (1000 * 60 * 60 * 24));
   };
 
-  const academicDiff = getDaysDiff(currentState.lastAcademicDate);
-  if (academicDiff === null || academicDiff > 1) {
-    academicStreak = 1;
-  } else if (academicDiff === 1) {
-    academicStreak += 1;
-  }
+  const isPiano = targetSkill.category === 'Class Piano IV';
 
-  if (targetSkill.category === 'Class Piano IV') {
+  if (isPiano) {
     const pianoDiff = getDaysDiff(currentState.lastPianoDate);
     if (pianoDiff === null || pianoDiff > 1) {
       pianoStreak = 1;
     } else if (pianoDiff === 1) {
       pianoStreak += 1;
+    }
+  } else {
+    const academicDiff = getDaysDiff(currentState.lastAcademicDate);
+    if (academicDiff === null || academicDiff > 1) {
+      academicStreak = 1;
+    } else if (academicDiff === 1) {
+      academicStreak += 1;
     }
   }
 
@@ -124,8 +125,8 @@ export function recordPracticeAttemptInStore(
     ...currentState,
     academicStreak,
     pianoStreak,
-    lastAcademicDate: today,
-    lastPianoDate: targetSkill.category === 'Class Piano IV' ? today : currentState.lastPianoDate,
+    lastAcademicDate: !isPiano ? today : currentState.lastAcademicDate,
+    lastPianoDate: isPiano ? today : currentState.lastPianoDate,
     totalMinutesStudied: currentState.totalMinutesStudied + durationMinutes,
     skills: newSkills,
     history: newHistory,

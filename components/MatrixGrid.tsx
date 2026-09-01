@@ -10,7 +10,6 @@ interface MatrixGridProps {
   onCellChange?: (row: number, col: number, val: number) => void;
   showNotes?: boolean;
   interactive?: boolean;
-  highlightTransform?: { form: 'P' | 'I' | 'R' | 'RI'; index: number };
 }
 
 export default function MatrixGrid({
@@ -19,7 +18,6 @@ export default function MatrixGrid({
   onCellChange,
   showNotes = true,
   interactive = false,
-  highlightTransform,
 }: MatrixGridProps) {
   const solutionMatrix = generateTwelveToneMatrix(p0Row);
 

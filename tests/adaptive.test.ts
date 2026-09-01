@@ -69,26 +69,83 @@ describe('Adaptive Learning Engine & Mastery', () => {
     expect(rxHome.recommendations.some(r => r.category === 'Class Piano IV')).toBe(true);
   });
 
-  it('resets streak to 1 if more than 1 day has elapsed since last practice', () => {
-    const initialStore = {
+  describe('Streak behavior', () => {
+    const pianoSkill: SkillItem = {
+      ...dummySkill,
+      id: 'piano-1',
+      category: 'Class Piano IV',
+      topic: 'Major Scales',
+    };
+
+    const baseStore = {
       examDate: '2026-12-08',
       isRoadMode: false,
       academicStreak: 5,
       pianoStreak: 3,
-      lastAcademicDate: '2025-01-01',
-      lastPianoDate: '2025-01-01',
-      skills: [dummySkill],
+      lastAcademicDate: '2025-01-10',
+      lastPianoDate: '2025-01-10',
+      skills: [dummySkill, pianoSkill],
       history: [],
       totalMinutesStudied: 10,
     };
 
-    const updated = recordPracticeAttemptInStore(initialStore, {
-      skillId: 'test-1',
-      isCorrect: true,
-      responseTimeMs: 2000,
-      date: new Date().toISOString(),
+    it('does not increment streak on same-day practice', () => {
+      const updated = recordPracticeAttemptInStore(baseStore, {
+        skillId: 'test-1',
+        isCorrect: true,
+        responseTimeMs: 2000,
+        date: '2025-01-10T12:00:00Z',
+      });
+
+      expect(updated.academicStreak).toBe(5);
     });
 
-    expect(updated.academicStreak).toBe(1);
+    it('increments streak by 1 on exactly one day later practice', () => {
+      const updated = recordPracticeAttemptInStore(baseStore, {
+        skillId: 'test-1',
+        isCorrect: true,
+        responseTimeMs: 2000,
+        date: '2025-01-11T12:00:00Z',
+      });
+
+      expect(updated.academicStreak).toBe(6);
+    });
+
+    it('resets streak to 1 if more than 1 day has elapsed since last practice', () => {
+      const updated = recordPracticeAttemptInStore(baseStore, {
+        skillId: 'test-1',
+        isCorrect: true,
+        responseTimeMs: 2000,
+        date: '2025-01-13T12:00:00Z',
+      });
+
+      expect(updated.academicStreak).toBe(1);
+    });
+
+    it('maintains independence between academic and piano streaks', () => {
+      // Academic practice on same day as last practice
+      const updatedAcademic = recordPracticeAttemptInStore(baseStore, {
+        skillId: 'test-1',
+        isCorrect: true,
+        responseTimeMs: 2000,
+        date: '2025-01-11T12:00:00Z',
+      });
+
+      // Academic streak updated, piano streak unchanged
+      expect(updatedAcademic.academicStreak).toBe(6);
+      expect(updatedAcademic.pianoStreak).toBe(3);
+
+      // Piano practice 1 day later
+      const updatedPiano = recordPracticeAttemptInStore(baseStore, {
+        skillId: 'piano-1',
+        isCorrect: true,
+        responseTimeMs: 2000,
+        date: '2025-01-11T12:00:00Z',
+      });
+
+      // Academic streak resets (targetSkill was piano so target skill category is Class Piano IV, but getDaysDiff calculates based on attempt date)
+      // When practicing piano skill, lastAcademicDate remains '2025-01-10'. On 2025-01-11 academicDiff is 1 -> academicStreak becomes 5+1 = 6. Piano streak becomes 3+1 = 4.
+      expect(updatedPiano.pianoStreak).toBe(4);
+    });
   });
 });
