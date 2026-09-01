@@ -3,7 +3,7 @@
  * Tracks mastery %, latency, confidence, error patterns, and estimates exam readiness.
  */
 
-export type ExamCategory = 'Theory IV' | 'Aural Skills IV' | 'Class Piano IV';
+export type ExamCategory = 'Theory IV' | 'Aural Skills IV' | 'Class Piano III' | 'Class Piano IV';
 
 export interface SkillItem {
   id: string;
