@@ -131,12 +131,39 @@ export default function PianoPage() {
     }, 1000);
   };
 
+  const cleanupMic = () => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(t => t.stop());
+      micStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try {
+        if (audioContextRef.current.state !== 'closed') {
+          void audioContextRef.current.close();
+        }
+      } catch {
+        // Safe catch
+      }
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    setIsMicListening(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      cleanupMic();
+    };
+  }, []);
+
   // Audio Microphone Stream Control
   const toggleMicListening = async () => {
     if (isMicListening) {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (micStreamRef.current) micStreamRef.current.getTracks().forEach(t => t.stop());
-      setIsMicListening(false);
+      cleanupMic();
       return;
     }
 
