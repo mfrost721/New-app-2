@@ -147,6 +147,20 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
     }
   });
 
+  it('reuses scratch buffer cleanly across consecutive autoCorrelate calls without data contamination', () => {
+    const sampleRate = 44100;
+    const bufA4 = generateSineBuffer(440, sampleRate, 0.1);
+    const bufC4 = generateSineBuffer(261.63, sampleRate, 0.1);
+
+    const resA4_first = autoCorrelate(bufA4, sampleRate);
+    const resC4_first = autoCorrelate(bufC4, sampleRate);
+    const resA4_second = autoCorrelate(bufA4, sampleRate);
+
+    expect(resA4_first).toEqual(resA4_second);
+    expect(resA4_first?.midi).toBe(69);
+    expect(resC4_first?.midi).toBe(60);
+  });
+
   it('rejects silent or unvoiced noise buffers without false positives', () => {
     const sampleRate = 44100;
 

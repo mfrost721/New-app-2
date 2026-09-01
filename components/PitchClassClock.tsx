@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { pitchClassToNote } from '@/lib/music/pitchClass';
 
 interface PitchClassClockProps {
@@ -9,7 +9,7 @@ interface PitchClassClockProps {
   showNoteNames?: boolean;
 }
 
-export default function PitchClassClock({
+function PitchClassClock({
   selectedPcs = [],
   onTogglePc,
   showNoteNames = true,
@@ -123,3 +123,5 @@ export default function PitchClassClock({
     </div>
   );
 }
+
+export default memo(PitchClassClock);
