@@ -19,7 +19,7 @@ export default function AuralPage() {
   const [micError, setMicError] = useState<string | null>(null);
 
   // Note-in-key ladder state (Target: E4 / MIDI 64 = Mi in C Major)
-  const targetDegree = 4; // Mi (3rd degree, 4 semitones above C4)
+  const targetDegree = 4; // chromatic semitone offset above C4 (0=C,2=D,4=E,5=F,...)
   const targetMidi = 64; // E4
 
   // Sight singing microphone pitch detection state
@@ -29,8 +29,8 @@ export default function AuralPage() {
 
   const activeStreamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const collectedPitchFramesRef = useRef<(PitchAnalysisResult | null)[]>([]);
 
   const stopRecordingAndCleanup = () => {
@@ -99,6 +99,11 @@ export default function AuralPage() {
       const AudioCtx =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) {
+        stream.getTracks().forEach(t => t.stop());
+        setMicError('Web Audio API is not supported in this browser.');
+        return;
+      }
       const audioCtx = new AudioCtx();
       audioCtxRef.current = audioCtx;
 
