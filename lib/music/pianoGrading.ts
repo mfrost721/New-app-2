@@ -210,7 +210,7 @@ export function evaluateAudioPitchSequence(
     timestampMs: i * msPerNote,
   }));
 
-  const result = evaluateMidiSequence(playedEvents, targetNotes, targetBpm, 'Audio' as unknown as 'MIDI');
+  const result = evaluateMidiSequence(playedEvents, targetNotes, targetBpm, 'MIDI');
   return {
     ...result,
     isAutomated: false, // Audio pitch detection requires transparent acknowledgment

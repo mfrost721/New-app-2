@@ -137,13 +137,14 @@ export function generateArpeggioNotes(
 /**
  * Helper to generate I-IV-I-V7-I Cadence target chord sequences.
  */
-export function generateCadenceChords(rootNote: string, startMidi: number = 60): number[][] {
+export function generateCadenceChords(rootNote: string, startMidi?: number): number[][] {
+  const baseMidi = startMidi ?? (ROOT_MIDI_MAP[rootNote] || 60);
   // I chord (Root position)
-  const I = [0, 4, 7].map(i => startMidi + i);
+  const I = [0, 4, 7].map(i => baseMidi + i);
   // IV chord (2nd inversion: 5, 0, 4 rel to key -> [c-5, c, c+4])
-  const IV = [0, 5, 9].map(i => startMidi + i);
+  const IV = [0, 5, 9].map(i => baseMidi + i);
   // V7 chord (1st inversion / root with 7th: e.g. B-D-F-G or G-B-D-F)
-  const V7 = [-1, 2, 5, 7].map(i => startMidi + i);
+  const V7 = [-1, 2, 5, 7].map(i => baseMidi + i);
   return [I, IV, I, V7, I];
 }
 
