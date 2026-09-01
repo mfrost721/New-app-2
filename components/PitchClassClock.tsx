@@ -9,7 +9,7 @@ interface PitchClassClockProps {
   showNoteNames?: boolean;
 }
 
-export default function PitchClassClock({
+function PitchClassClock({
   selectedPcs = [],
   onTogglePc,
   showNoteNames = true,
@@ -122,3 +122,5 @@ export default function PitchClassClock({
     </div>
   );
 }
+
+export default React.memo(PitchClassClock);

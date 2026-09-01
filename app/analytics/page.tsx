@@ -13,9 +13,8 @@ export default function AnalyticsPage() {
     });
   }, []);
 
-  if (!store) return <div className="p-8 text-center text-slate-400">Loading analytics...</div>;
-
-  const exportDataJson = () => {
+  const exportDataJson = React.useCallback(() => {
+    if (!store) return;
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(store, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
@@ -23,9 +22,14 @@ export default function AnalyticsPage() {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-  };
+  }, [store]);
 
-  const weakestSkills = [...store.skills].sort((a, b) => a.mastery - b.mastery).slice(0, 5);
+  const weakestSkills = React.useMemo(() => {
+    if (!store) return [];
+    return [...store.skills].sort((a, b) => a.mastery - b.mastery).slice(0, 5);
+  }, [store]);
+
+  if (!store) return <div className="p-8 text-center text-slate-400">Loading analytics...</div>;
 
   return (
     <div className="space-y-8">

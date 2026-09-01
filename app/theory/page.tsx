@@ -10,6 +10,12 @@ import { buildScale, SCALE_DEFINITIONS, ModeName } from '@/lib/music/scalesAndMo
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
 import { Brain, Check, Clock } from 'lucide-react';
 
+const SAMPLE_ROW = [0, 11, 7, 8, 2, 1, 9, 10, 4, 3, 5, 6];
+const SCORE_ANNOTATIONS = [
+  { measure: 1, label: 'Octatonic Collection [0,1,3,4,6,7,9,10]' },
+  { measure: 2, label: 'Secondary Dominant V7/V' },
+];
+
 export default function TheoryPage() {
   const [activeTab, setActiveTab] = useState<'setTheory' | 'matrixSpeedRun' | 'modes' | 'scoreAnalysis' | 'mockExam'>('setTheory');
 
@@ -18,22 +24,22 @@ export default function TheoryPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Matrix Speed Run state
-  const sampleRow = [0, 11, 7, 8, 2, 1, 9, 10, 4, 3, 5, 6];
   const [userAnswer, setUserAnswer] = useState<string>('');
   const [matrixResult, setMatrixResult] = useState<string | null>(null);
 
   // Mode Trainer state
   const currentMode: ModeName = 'Dorian';
 
-  const togglePc = (pc: number) => {
+  const togglePc = React.useCallback((pc: number) => {
     setSelectedPcs(prev =>
       prev.includes(pc) ? prev.filter(p => p !== pc) : [...prev, pc].sort((a, b) => a - b)
     );
-  };
+  }, []);
 
-  const currentNormal = getNormalOrder(selectedPcs);
-  const currentPrime = getPrimeForm(selectedPcs);
-  const currentVector = getIntervalVector(selectedPcs);
+  const currentNormal = React.useMemo(() => getNormalOrder(selectedPcs), [selectedPcs]);
+  const currentPrime = React.useMemo(() => getPrimeForm(selectedPcs), [selectedPcs]);
+  const currentVector = React.useMemo(() => getIntervalVector(selectedPcs), [selectedPcs]);
+  const modeActiveMidis = React.useMemo(() => buildScale('C', currentMode).pitchClasses.map(pc => 60 + pc), [currentMode]);
 
   const handleRecordSuccess = (skillId: string) => {
     const store = loadUserStore();
@@ -155,7 +161,7 @@ export default function TheoryPage() {
             </div>
           </div>
 
-          <MatrixGrid p0Row={sampleRow} showNotes={true} />
+          <MatrixGrid p0Row={SAMPLE_ROW} showNotes={true} />
 
           <div className="flex space-x-3 max-w-md">
             <input
@@ -198,7 +204,7 @@ export default function TheoryPage() {
             </p>
 
             <KeyboardVisualizer
-              activeMidis={buildScale('C', currentMode).pitchClasses.map(pc => 60 + pc)}
+              activeMidis={modeActiveMidis}
               labelMode="note"
             />
 
@@ -233,10 +239,7 @@ export default function TheoryPage() {
         <div className="space-y-6">
           <ScoreViewer
             title="Schoenberg Op. 19 Excerpt Analysis"
-            annotations={[
-              { measure: 1, label: 'Octatonic Collection [0,1,3,4,6,7,9,10]' },
-              { measure: 2, label: 'Secondary Dominant V7/V' },
-            ]}
+            annotations={SCORE_ANNOTATIONS}
           />
 
           <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-3">

@@ -6,6 +6,15 @@ import { usePathname } from 'next/navigation';
 import { loadUserStore, saveUserStore, UserStoreState } from '@/lib/storage/store';
 import { Music, Mic, Piano, BookOpen, BarChart3, Smartphone, Home } from 'lucide-react';
 
+const NAV_ITEMS = [
+  { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Theory IV', href: '/theory', icon: BookOpen },
+  { name: 'Aural Skills IV', href: '/aural', icon: Mic },
+  { name: 'Class Piano IV', href: '/piano', icon: Piano },
+  { name: 'Knowledge Base', href: '/knowledgebase', icon: Music },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+];
+
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<UserStoreState | null>(null);
   const pathname = usePathname();
@@ -15,21 +24,14 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     setStore(loaded);
   }, []);
 
-  const toggleRoadMode = () => {
-    if (!store) return;
-    const updated = { ...store, isRoadMode: !store.isRoadMode };
-    setStore(updated);
-    saveUserStore(updated);
-  };
-
-  const navItems = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Theory IV', href: '/theory', icon: BookOpen },
-    { name: 'Aural Skills IV', href: '/aural', icon: Mic },
-    { name: 'Class Piano IV', href: '/piano', icon: Piano },
-    { name: 'Knowledge Base', href: '/knowledgebase', icon: Music },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  ];
+  const toggleRoadMode = React.useCallback(() => {
+    setStore(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, isRoadMode: !prev.isRoadMode };
+      saveUserStore(updated);
+      return updated;
+    });
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans">
@@ -68,7 +70,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         {/* Desktop Sidebar / Mobile Nav Bar */}
         <nav className="w-full md:w-64 bg-slate-900 border-r border-slate-800 p-4 shrink-0">
           <div className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto pb-2 md:pb-0">
-            {navItems.map((item) => {
+            {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               return (

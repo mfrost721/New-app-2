@@ -13,6 +13,17 @@ export interface PitchAnalysisResult {
 
 const NOTE_NAMES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
+let scratchBuffer = new Float32Array(2048);
+
+function getScratchBuffer(size: number): Float32Array {
+  if (scratchBuffer.length < size) {
+    scratchBuffer = new Float32Array(size);
+  } else {
+    scratchBuffer.fill(0, 0, size);
+  }
+  return scratchBuffer;
+}
+
 export function freqToMidi(freq: number): { midi: number; noteName: string; cents: number } {
   const midiExact = 69 + 12 * Math.log2(freq / 440);
   const midi = Math.round(midiExact);
@@ -59,11 +70,11 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
     }
   }
 
-  const buf = r2 > r1 ? buffer.slice(r1, r2) : buffer;
+  const buf = r2 > r1 ? buffer.subarray(r1, r2) : buffer;
   const newSize = buf.length;
   if (newSize < 32) return null;
 
-  const c = new Float32Array(newSize);
+  const c = getScratchBuffer(newSize);
   for (let i = 0; i < newSize; i++) {
     for (let j = 0; j < newSize - i; j++) {
       c[i] += buf[j] * buf[j + i];

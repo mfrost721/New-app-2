@@ -18,16 +18,18 @@ interface ScoreViewerProps {
   onNoteClick?: (index: number) => void;
 }
 
-export default function ScoreViewer({
+const DEFAULT_NOTES: ScoreNote[] = [
+  { pitch: 'C4', duration: 'quarter' },
+  { pitch: 'E4', duration: 'quarter' },
+  { pitch: 'G4', duration: 'quarter' },
+  { pitch: 'B4', duration: 'quarter' },
+];
+
+function ScoreViewer({
   title = 'Excerpt Analysis',
   clef = 'treble',
   timeSignature = [4, 4],
-  notes = [
-    { pitch: 'C4', duration: 'quarter' },
-    { pitch: 'E4', duration: 'quarter' },
-    { pitch: 'G4', duration: 'quarter' },
-    { pitch: 'B4', duration: 'quarter' },
-  ],
+  notes = DEFAULT_NOTES,
   annotations = [],
   onNoteClick,
 }: ScoreViewerProps) {
@@ -105,3 +107,5 @@ export default function ScoreViewer({
     </div>
   );
 }
+
+export default React.memo(ScoreViewer);

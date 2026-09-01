@@ -6,21 +6,37 @@ import ScoreViewer from '@/components/ScoreViewer';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
 import { Piano, Check, Clock, RotateCcw } from 'lucide-react';
 
+const KEYS_LIST = ['Eb Major', 'F# Minor (Harmonic)', 'Ab Major', 'C# Minor (Melodic)', 'D Diminished 7th'];
+
 export default function PianoPage() {
   const [activeTab, setActiveTab] = useState<'technique' | 'harmonization' | 'happyBirthday' | 'sightReading'>('technique');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Technique Gauntlet state
-  const keysList = ['Eb Major', 'F# Minor (Harmonic)', 'Ab Major', 'C# Minor (Melodic)', 'D Diminished 7th'];
   const [currentPromptIdx, setCurrentPromptIdx] = useState<number>(0);
   const [previewCountdown, setPreviewCountdown] = useState<number | null>(null);
+  const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
 
   const startPreviewTimer = () => {
+    if (timerRef.current !== null) {
+      clearInterval(timerRef.current);
+    }
     setPreviewCountdown(20);
-    const interval = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setPreviewCountdown(prev => {
         if (prev === null || prev <= 1) {
-          clearInterval(interval);
+          if (timerRef.current !== null) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
           return 0;
         }
         return prev - 1;
@@ -96,13 +112,13 @@ export default function PianoPage() {
           <div className="flex justify-between items-center">
             <div>
               <span className="text-xs text-amber-400 font-bold uppercase tracking-wider">Random Key Technique Prompt</span>
-              <h2 className="text-3xl font-black text-slate-100 mt-1">{keysList[currentPromptIdx]}</h2>
+              <h2 className="text-3xl font-black text-slate-100 mt-1">{KEYS_LIST[currentPromptIdx]}</h2>
               <p className="text-xs text-slate-400 mt-1">
                 2 Octaves • Hands Together • Standard Fingering • Quarter Note = 100 bpm.
               </p>
             </div>
             <button
-              onClick={() => setCurrentPromptIdx((currentPromptIdx + 1) % keysList.length)}
+              onClick={() => setCurrentPromptIdx((currentPromptIdx + 1) % KEYS_LIST.length)}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs flex items-center space-x-1"
             >
               <RotateCcw className="w-3.5 h-3.5" />

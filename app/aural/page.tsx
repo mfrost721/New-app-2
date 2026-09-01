@@ -68,7 +68,6 @@ export default function AuralPage() {
         setActiveStream(null);
         audioCtx.close();
         setIsRecording(false);
-        // Note: Raw mic pitch evaluation prototype - actual sung score depends on pitch analysis matching.
       }, 5000);
     } catch {
       alert('Microphone access is required for Sight-Singing Studio.');

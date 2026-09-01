@@ -60,11 +60,14 @@ const ARTICLES: KnowledgeArticle[] = [
 export default function KnowledgeBasePage() {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filtered = ARTICLES.filter(a =>
-    a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = React.useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return ARTICLES.filter(a =>
+      a.title.toLowerCase().includes(term) ||
+      a.summary.toLowerCase().includes(term) ||
+      a.category.toLowerCase().includes(term)
+    );
+  }, [searchTerm]);
 
   return (
     <div className="space-y-8">
