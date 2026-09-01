@@ -93,23 +93,16 @@ export function recordPracticeAttemptInStore(
   const newSkills = currentState.skills.map(s => (s.id === attempt.skillId ? updatedSkill : s));
   const newHistory = [attempt, ...currentState.history.slice(0, 99)];
 
-  const today = new Date().toISOString().split('T')[0];
+  const practiceDate = new Date(attempt.date).toISOString().split('T')[0];
   let academicStreak = currentState.academicStreak;
   let pianoStreak = currentState.pianoStreak;
 
   const getDaysDiff = (dateStr: string | null) => {
     if (!dateStr) return null;
     const past = new Date(dateStr).getTime();
-    const curr = new Date(today).getTime();
+    const curr = new Date(practiceDate).getTime();
     return Math.floor((curr - past) / (1000 * 60 * 60 * 24));
   };
-
-  const academicDiff = getDaysDiff(currentState.lastAcademicDate);
-  if (academicDiff === null || academicDiff > 1) {
-    academicStreak = 1;
-  } else if (academicDiff === 1) {
-    academicStreak += 1;
-  }
 
   if (targetSkill.category === 'Class Piano IV') {
     const pianoDiff = getDaysDiff(currentState.lastPianoDate);
@@ -118,14 +111,21 @@ export function recordPracticeAttemptInStore(
     } else if (pianoDiff === 1) {
       pianoStreak += 1;
     }
+  } else {
+    const academicDiff = getDaysDiff(currentState.lastAcademicDate);
+    if (academicDiff === null || academicDiff > 1) {
+      academicStreak = 1;
+    } else if (academicDiff === 1) {
+      academicStreak += 1;
+    }
   }
 
   const updatedState: UserStoreState = {
     ...currentState,
     academicStreak,
     pianoStreak,
-    lastAcademicDate: today,
-    lastPianoDate: targetSkill.category === 'Class Piano IV' ? today : currentState.lastPianoDate,
+    lastAcademicDate: targetSkill.category === 'Class Piano IV' ? currentState.lastAcademicDate : practiceDate,
+    lastPianoDate: targetSkill.category === 'Class Piano IV' ? practiceDate : currentState.lastPianoDate,
     totalMinutesStudied: currentState.totalMinutesStudied + durationMinutes,
     skills: newSkills,
     history: newHistory,
