@@ -60,9 +60,34 @@ export default function PianoPage() {
   // Sight-reading timer state
   const [previewCountdown, setPreviewCountdown] = useState<number | null>(null);
 
+  // Audio Microphone Stream Control
+  const stopMicListening = React.useCallback(() => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(t => t.stop());
+      micStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try {
+        void audioContextRef.current.close();
+      } catch {
+        // Safe catch
+      }
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    setIsMicListening(false);
+  }, []);
+
   useEffect(() => {
     setUserStore(loadUserStore());
-  }, []);
+    return () => {
+      stopMicListening();
+    };
+  }, [stopMicListening]);
 
   // Filter exercises
   let currentExercise: PianoExercise | undefined;
@@ -131,14 +156,13 @@ export default function PianoPage() {
     }, 1000);
   };
 
-  // Audio Microphone Stream Control
   const toggleMicListening = async () => {
     if (isMicListening) {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (micStreamRef.current) micStreamRef.current.getTracks().forEach(t => t.stop());
-      setIsMicListening(false);
+      stopMicListening();
       return;
     }
+
+    stopMicListening();
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
