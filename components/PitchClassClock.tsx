@@ -32,7 +32,7 @@ function PitchClassClock({
 
   return (
     <div className="flex flex-col items-center justify-center p-4 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
-      <svg width={300} height={300} aria-label="Interactive pitch class clock" className="select-none max-w-full h-auto">
+      <svg width={300} height={300} className="select-none">
         {/* Background track circle */}
         <circle
           cx={center}
@@ -75,8 +75,7 @@ function PitchClassClock({
               key={pc}
               role="button"
               tabIndex={0}
-              aria-pressed={isSelected}
-              aria-label={`Pitch class ${pc}${showNoteNames ? ` (${noteName})` : ''}`}
+              aria-label={`Toggle pitch class ${pc}${showNoteNames ? ` (${noteName})` : ''}`}
               onClick={() => handleToggle(pc)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -84,13 +83,13 @@ function PitchClassClock({
                   handleToggle(pc);
                 }
               }}
-              className="cursor-pointer transition-transform duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 origin-center"
+              className="cursor-pointer transition-transform duration-150 hover:scale-110 origin-center"
               style={{ transformOrigin: `${x}px ${y}px` }}
             >
               <circle
                 cx={x}
                 cy={y}
-                r={22}
+                r={20}
                 className={
                   isSelected
                     ? 'fill-amber-500 stroke-amber-300 stroke-2 shadow-lg'

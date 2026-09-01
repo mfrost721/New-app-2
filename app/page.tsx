@@ -33,9 +33,11 @@ export default function HomeDashboard() {
     [store]
   );
 
-  const daysLeft = store
-    ? Math.max(0, Math.ceil((new Date(store.examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 0;
+  const daysLeft = React.useMemo(() => {
+    if (!store) return 0;
+    const examDateObj = new Date(store.examDate);
+    return Math.max(0, Math.ceil((examDateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+  }, [store]);
 
   if (!store || !theoryReadiness || !auralReadiness || !pianoReadiness || !prescription) {
     return <div className="p-8 text-center text-slate-400">Loading Frost Music Lab...</div>;
@@ -61,7 +63,7 @@ export default function HomeDashboard() {
         <div className="flex items-center space-x-3">
           <Link
             href="/theory"
-            className="flex items-center space-x-2 px-5 py-3 min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-all shadow-lg hover:shadow-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+            className="flex items-center space-x-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-all shadow-lg hover:shadow-amber-500/20"
           >
             <Zap className="w-4 h-4" />
             <span>Start Drill</span>

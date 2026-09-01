@@ -68,40 +68,28 @@ export default function TheoryPage() {
         </div>
 
         {/* Tab Switcher */}
-        <div role="tablist" aria-label="Theory drill sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
+        <div className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto">
           <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'setTheory'}
             onClick={() => setActiveTab('setTheory')}
-            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'setTheory' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'setTheory' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Pitch-Class Sets
           </button>
           <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'matrixSpeedRun'}
             onClick={() => setActiveTab('matrixSpeedRun')}
-            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'matrixSpeedRun' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'matrixSpeedRun' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Matrix Speed Run
           </button>
           <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'modes'}
             onClick={() => setActiveTab('modes')}
-            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'modes' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'modes' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Modes & Scales
           </button>
           <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'scoreAnalysis'}
             onClick={() => setActiveTab('scoreAnalysis')}
-            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'scoreAnalysis' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'scoreAnalysis' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Score Arena
           </button>
@@ -109,7 +97,7 @@ export default function TheoryPage() {
       </div>
 
       {feedback && (
-        <div role="status" aria-live="polite" className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-bold flex items-center space-x-2">
+        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-bold flex items-center space-x-2">
           <Check className="w-4 h-4" />
           <span>{feedback}</span>
         </div>
@@ -150,9 +138,8 @@ export default function TheoryPage() {
             </div>
 
             <button
-              type="button"
               onClick={() => handleRecordSuccess('t1')}
-              className="w-full py-3 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+              className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all"
             >
               Log Set Calculation Practice
             </button>
@@ -176,17 +163,15 @@ export default function TheoryPage() {
 
           <MatrixGrid p0Row={SAMPLE_ROW} showNotes={true} />
 
-          <div className="flex flex-col sm:flex-row gap-3 max-w-md">
+          <div className="flex space-x-3 max-w-md">
             <input
               type="text"
-              aria-label="Row transformation answer"
               placeholder="Enter row transformation (e.g. 7)"
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
-              className="flex-1 px-4 py-2.5 min-h-[44px] bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 focus:outline-none focus:ring-1 focus:ring-amber-400"
             />
             <button
-              type="button"
               onClick={() => {
                 if (userAnswer === '7' || userAnswer === 'G') {
                   setMatrixResult('Correct! I7 begins on pitch class 7 (G).');
@@ -195,7 +180,7 @@ export default function TheoryPage() {
                   setMatrixResult('Incorrect. I7 starts on index 7.');
                 }
               }}
-              className="px-5 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all"
             >
               Submit
             </button>
@@ -226,7 +211,6 @@ export default function TheoryPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {(Object.keys(SCALE_DEFINITIONS) as ModeName[]).slice(0, 8).map((mode) => (
                 <button
-                  type="button"
                   key={mode}
                   onClick={() => {
                     if (mode === currentMode) {
@@ -236,7 +220,7 @@ export default function TheoryPage() {
                       setFeedback(`Incorrect. Scale is ${currentMode}.`);
                     }
                   }}
-                  className={`p-3 min-h-[44px] rounded-xl border text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                  className={`p-3 rounded-xl border text-xs font-bold transition-all ${
                     mode === currentMode
                       ? 'bg-amber-500/10 border-amber-500/40 text-amber-400'
                       : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
@@ -264,9 +248,8 @@ export default function TheoryPage() {
               Identify the harmonic structure present in Measure 1.
             </p>
             <button
-              type="button"
               onClick={() => handleRecordSuccess('t5')}
-              className="px-4 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+              className="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl text-xs"
             >
               Confirm Analysis (Octatonic)
             </button>
