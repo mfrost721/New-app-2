@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { updateSkillMastery, calculateExamReadiness, SkillItem } from '../lib/adaptive/mastery';
 import { generatePracticePrescription } from '../lib/adaptive/practicePrescription';
-import { recordPracticeAttemptInStore } from '../lib/storage/store';
+import { recordPracticeAttemptInStore, INITIAL_STATE, UserStoreState } from '../lib/storage/store';
 
 describe('Adaptive Learning Engine & Mastery', () => {
   const dummySkill: SkillItem = {
@@ -92,7 +92,8 @@ describe('Adaptive Learning Engine & Mastery', () => {
       topic: 'Major Scales',
     };
 
-    const baseStore = {
+    const baseStore: UserStoreState = {
+      ...INITIAL_STATE,
       examDate: '2026-12-08',
       isRoadMode: false,
       academicStreak: 5,
@@ -158,8 +159,6 @@ describe('Adaptive Learning Engine & Mastery', () => {
         date: '2025-01-11T12:00:00Z',
       });
 
-      // Academic streak resets (targetSkill was piano so target skill category is Class Piano IV, but getDaysDiff calculates based on attempt date)
-      // When practicing piano skill, lastAcademicDate remains '2025-01-10'. On 2025-01-11 academicDiff is 1 -> academicStreak becomes 5+1 = 6. Piano streak becomes 3+1 = 4.
       expect(updatedPiano.pianoStreak).toBe(4);
     });
   });

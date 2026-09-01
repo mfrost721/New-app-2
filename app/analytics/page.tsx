@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { loadUserStore, UserStoreState } from '@/lib/storage/store';
-import { BarChart3, Download, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { loadUserStore, UserStoreState, createExportPayload, importUserStore } from '@/lib/storage/store';
+import { BarChart3, Download, Upload, AlertTriangle, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const [store, setStore] = useState<UserStoreState | null>(null);
+  const [importStatus, setImportStatus] = useState<{ message: string; isError: boolean } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -16,13 +18,53 @@ export default function AnalyticsPage() {
   if (!store) return <div className="p-8 text-center text-slate-400">Loading analytics...</div>;
 
   const exportDataJson = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(store, null, 2));
+    if (!store) return;
+    const payload = createExportPayload(store);
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
     downloadAnchor.setAttribute('download', `frost_music_lab_export_${new Date().toISOString().slice(0, 10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  };
+
+  const handleImportClick = () => {
+    setImportStatus(null);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result;
+      if (typeof content !== 'string') {
+        setImportStatus({ message: 'Failed to read backup file.', isError: true });
+        return;
+      }
+
+      const result = importUserStore(content);
+      if (result.success && result.state) {
+        setStore(result.state);
+        setImportStatus({ message: 'Backup imported successfully! Progress restored.', isError: false });
+      } else {
+        setImportStatus({
+          message: result.error || 'Failed to import backup file.',
+          isError: true,
+        });
+      }
+    };
+
+    reader.onerror = () => {
+      setImportStatus({ message: 'Error reading file from disk.', isError: true });
+    };
+
+    reader.readAsText(file);
+    // Reset file input value so same file can be selected again if needed
+    e.target.value = '';
   };
 
   const weakestSkills = [...store.skills].sort((a, b) => a.mastery - b.mastery).slice(0, 5);
@@ -40,14 +82,50 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
-        <button
-          onClick={exportDataJson}
-          className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all"
-        >
-          <Download className="w-4 h-4 text-amber-400" />
-          <span>Export Practice Data (JSON)</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept=".json,application/json"
+            className="hidden"
+            aria-label="Import practice data JSON file"
+          />
+
+          <button
+            onClick={handleImportClick}
+            className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer"
+          >
+            <Upload className="w-4 h-4 text-sky-400" />
+            <span>Import Practice Data</span>
+          </button>
+
+          <button
+            onClick={exportDataJson}
+            className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4 text-amber-400" />
+            <span>Export Practice Data (JSON)</span>
+          </button>
+        </div>
       </div>
+
+      {importStatus && (
+        <div
+          className={`p-4 rounded-xl border flex items-center space-x-3 text-xs font-semibold ${
+            importStatus.isError
+              ? 'bg-rose-950/50 border-rose-800 text-rose-300'
+              : 'bg-emerald-950/50 border-emerald-800 text-emerald-300'
+          }`}
+        >
+          {importStatus.isError ? (
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          )}
+          <span>{importStatus.message}</span>
+        </div>
+      )}
 
       {/* Weakness Queue */}
       <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-4">
