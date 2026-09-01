@@ -9,23 +9,43 @@ import { Zap, Clock, CheckCircle2 } from 'lucide-react';
 
 export default function HomeDashboard() {
   const [store, setStore] = useState<UserStoreState | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const loaded = loadUserStore();
     setStore(loaded);
   }, []);
 
-  if (!store) return <div className="p-8 text-center text-slate-400">Loading Frost Music Lab...</div>;
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
-  const theoryReadiness = calculateExamReadiness(store.skills, 'Theory IV');
-  const auralReadiness = calculateExamReadiness(store.skills, 'Aural Skills IV');
-  const pianoReadiness = calculateExamReadiness(store.skills, 'Class Piano IV');
+  const theoryReadiness = React.useMemo(
+    () => (store ? calculateExamReadiness(store.skills, 'Theory IV') : null),
+    [store]
+  );
+  const auralReadiness = React.useMemo(
+    () => (store ? calculateExamReadiness(store.skills, 'Aural Skills IV') : null),
+    [store]
+  );
+  const pianoReadiness = React.useMemo(
+    () => (store ? calculateExamReadiness(store.skills, 'Class Piano IV') : null),
+    [store]
+  );
 
-  const prescription = generatePracticePrescription(store.skills, 20, store.isRoadMode);
+  const prescription = React.useMemo(
+    () => (store ? generatePracticePrescription(store.skills, 20, store.isRoadMode) : null),
+    [store]
+  );
 
-  // Countdown calculations (Target: Dec 8, 2026 or custom)
-  const examDateObj = new Date(store.examDate);
-  const daysLeft = Math.max(0, Math.ceil((examDateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+  const daysLeft = store
+    ? Math.max(0, Math.ceil((new Date(store.examDate).getTime() - now) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  if (!store || !theoryReadiness || !auralReadiness || !pianoReadiness || !prescription) {
+    return <div className="p-8 text-center text-slate-400">Loading Frost Music Lab...</div>;
+  }
 
   return (
     <div className="space-y-8">
