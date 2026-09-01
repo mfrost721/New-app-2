@@ -62,9 +62,11 @@ export default function TheoryPage() {
         </div>
 
         {/* Tab Switcher */}
-        <div aria-label="Theory drill sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
+        <div role="tablist" aria-label="Theory drill sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'setTheory'}
             onClick={() => setActiveTab('setTheory')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'setTheory' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -72,6 +74,8 @@ export default function TheoryPage() {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'matrixSpeedRun'}
             onClick={() => setActiveTab('matrixSpeedRun')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'matrixSpeedRun' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -79,6 +83,8 @@ export default function TheoryPage() {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'modes'}
             onClick={() => setActiveTab('modes')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'modes' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -86,6 +92,8 @@ export default function TheoryPage() {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'scoreAnalysis'}
             onClick={() => setActiveTab('scoreAnalysis')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'scoreAnalysis' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
