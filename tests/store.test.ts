@@ -152,7 +152,7 @@ describe('Storage and UserStore Engine', () => {
     };
 
     const pianoAttempt: PracticeAttempt = {
-      skillId: 'p1', // Class Piano IV skill
+      skillId: 'p4_scale_eb_maj', // Class Piano IV skill
       isCorrect: true,
       responseTimeMs: 1000,
       date: '2026-03-02T12:00:00.000Z',
