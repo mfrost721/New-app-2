@@ -333,9 +333,7 @@ export function evaluateSungPitch(
       pitchScore = Math.round(pitchScore * 0.85); // minor octave penalty
     }
 
-    const rhythmScore = pitchResults.length > 0
-      ? Math.min(100, Math.round((validFrames.length / pitchResults.length) * 120))
-      : 0;
+    const rhythmScore = Math.min(100, Math.round((validFrames.length / pitchResults.length) * 120));
     const totalScore = Math.round(pitchScore * 0.7 + rhythmScore * 0.3);
     const isCorrect = absCents <= toleranceCents && (isExactMidiMatch || isOctaveTransposed);
 
@@ -369,9 +367,7 @@ export function evaluateSungPitch(
 
   const accuracyRatio = targetMidis.length > 0 ? matchedCount / targetMidis.length : 0;
   const pitchScore = Math.round(accuracyRatio * 100);
-  const rhythmScore = pitchResults.length > 0
-    ? Math.min(100, Math.round((validFrames.length / pitchResults.length) * 100))
-    : 0;
+  const rhythmScore = Math.min(100, Math.round((validFrames.length / pitchResults.length) * 100));
   const totalScore = Math.round(pitchScore * 0.7 + rhythmScore * 0.3);
   const isCorrect = accuracyRatio >= 0.75;
 
