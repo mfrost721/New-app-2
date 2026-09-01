@@ -16,13 +16,17 @@ export default function AnalyticsPage() {
   if (!store) return <div className="p-8 text-center text-slate-400">Loading analytics...</div>;
 
   const exportDataJson = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(store, null, 2));
+    const jsonString = JSON.stringify(store, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('href', url);
     downloadAnchor.setAttribute('download', `frost_music_lab_export_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute('rel', 'noopener noreferrer');
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+    URL.revokeObjectURL(url);
   };
 
   const weakestSkills = [...store.skills].sort((a, b) => a.mastery - b.mastery).slice(0, 5);

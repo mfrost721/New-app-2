@@ -35,7 +35,7 @@ class MIDIController {
   public async init(): Promise<boolean> {
     if (!this.isSupported) return false;
     try {
-      this.midiAccess = await (navigator as unknown as { requestMIDIAccess: () => Promise<WebMidiAccess> }).requestMIDIAccess();
+      this.midiAccess = await (navigator as unknown as { requestMIDIAccess: (options?: { sysex?: boolean }) => Promise<WebMidiAccess> }).requestMIDIAccess({ sysex: false });
       const inputs = this.midiAccess.inputs.values();
       for (const input of inputs) {
         input.onmidimessage = this.handleMIDIMessage.bind(this);

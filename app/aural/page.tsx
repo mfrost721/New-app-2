@@ -82,6 +82,7 @@ export default function AuralPage() {
   };
 
   const handleMicStart = async () => {
+    stopRecordingAndCleanup();
     setMicError(null);
     setSingingScore(null);
     setPitchResult(null);

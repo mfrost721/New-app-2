@@ -69,13 +69,89 @@ export const INITIAL_STATE: UserStoreState = {
   history: [],
 };
 
+export function sanitizeUserStore(raw: unknown): UserStoreState {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return INITIAL_STATE;
+  }
+
+  const data = raw as Record<string, unknown>;
+
+  const examDate = typeof data.examDate === 'string' ? data.examDate : INITIAL_STATE.examDate;
+  const isRoadMode = typeof data.isRoadMode === 'boolean' ? data.isRoadMode : INITIAL_STATE.isRoadMode;
+  const academicStreak = typeof data.academicStreak === 'number' && Number.isFinite(data.academicStreak) && data.academicStreak >= 0
+    ? data.academicStreak
+    : INITIAL_STATE.academicStreak;
+  const pianoStreak = typeof data.pianoStreak === 'number' && Number.isFinite(data.pianoStreak) && data.pianoStreak >= 0
+    ? data.pianoStreak
+    : INITIAL_STATE.pianoStreak;
+  const lastAcademicDate = typeof data.lastAcademicDate === 'string' ? data.lastAcademicDate : null;
+  const lastPianoDate = typeof data.lastPianoDate === 'string' ? data.lastPianoDate : null;
+  const totalMinutesStudied = typeof data.totalMinutesStudied === 'number' && Number.isFinite(data.totalMinutesStudied) && data.totalMinutesStudied >= 0
+    ? data.totalMinutesStudied
+    : INITIAL_STATE.totalMinutesStudied;
+
+  let skills: SkillItem[] = [];
+  if (Array.isArray(data.skills)) {
+    const rawSkills = data.skills as Record<string, unknown>[];
+    skills = rawSkills
+      .filter((s): s is Record<string, unknown> => Boolean(s) && typeof s === 'object' && typeof s.id === 'string')
+      .map(s => {
+        const defaultSkill = INITIAL_SKILLS.find(init => init.id === s.id);
+        return {
+          id: String(s.id),
+          category: (typeof s.category === 'string' ? s.category : defaultSkill?.category || 'Theory IV') as SkillItem['category'],
+          topic: typeof s.topic === 'string' ? s.topic : defaultSkill?.topic || '',
+          mastery: typeof s.mastery === 'number' && Number.isFinite(s.mastery) ? Math.min(100, Math.max(0, s.mastery)) : defaultSkill?.mastery || 0,
+          totalAttempts: typeof s.totalAttempts === 'number' && Number.isFinite(s.totalAttempts) && s.totalAttempts >= 0 ? s.totalAttempts : 0,
+          correctAttempts: typeof s.correctAttempts === 'number' && Number.isFinite(s.correctAttempts) && s.correctAttempts >= 0 ? s.correctAttempts : 0,
+          lastPracticed: typeof s.lastPracticed === 'string' ? s.lastPracticed : '',
+          recentLatencyMs: Array.isArray(s.recentLatencyMs) ? s.recentLatencyMs.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)) : [],
+          errorHistory: Array.isArray(s.errorHistory) ? s.errorHistory.filter((e): e is string => typeof e === 'string') : [],
+        };
+      });
+  }
+
+  // Merge missing initial skills
+  for (const initSkill of INITIAL_SKILLS) {
+    if (!skills.some(s => s.id === initSkill.id)) {
+      skills.push(initSkill);
+    }
+  }
+
+  let history: PracticeAttempt[] = [];
+  if (Array.isArray(data.history)) {
+    history = (data.history as Record<string, unknown>[])
+      .filter((h): h is Record<string, unknown> => Boolean(h) && typeof h === 'object' && typeof h.skillId === 'string')
+      .map(h => ({
+        skillId: String(h.skillId),
+        isCorrect: Boolean(h.isCorrect),
+        confidenceRating: typeof h.confidenceRating === 'number' ? h.confidenceRating : undefined,
+        responseTimeMs: typeof h.responseTimeMs === 'number' && Number.isFinite(h.responseTimeMs) ? h.responseTimeMs : 0,
+        errorType: typeof h.errorType === 'string' ? h.errorType : undefined,
+        date: typeof h.date === 'string' ? h.date : new Date().toISOString(),
+      }));
+  }
+
+  return {
+    examDate,
+    isRoadMode,
+    academicStreak,
+    pianoStreak,
+    lastAcademicDate,
+    lastPianoDate,
+    totalMinutesStudied,
+    skills,
+    history,
+  };
+}
+
 export function loadUserStore(): UserStoreState {
   if (typeof window === 'undefined') return INITIAL_STATE;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return INITIAL_STATE;
     const parsed = JSON.parse(raw);
-    return { ...INITIAL_STATE, ...parsed };
+    return sanitizeUserStore(parsed);
   } catch {
     return INITIAL_STATE;
   }

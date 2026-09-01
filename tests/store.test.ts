@@ -55,6 +55,28 @@ describe('Storage and UserStore Engine', () => {
     expect(store.skills.length).toBe(INITIAL_SKILLS.length);
   });
 
+  it('sanitizes malformed objects and fills missing skills', () => {
+    const malformed = JSON.stringify({
+      academicStreak: -50,
+      pianoStreak: 'invalid',
+      skills: [
+        { id: 't1', mastery: 150 }, // out of bounds
+        { invalid: true }, // missing id
+      ],
+      history: 'invalid_history_format',
+    });
+    localStorageMock.setItem('frost_music_lab_user_store_v1', malformed);
+
+    const loaded = loadUserStore();
+    expect(loaded.academicStreak).toBe(INITIAL_STATE.academicStreak);
+    expect(loaded.pianoStreak).toBe(INITIAL_STATE.pianoStreak);
+    expect(loaded.history).toEqual([]);
+    expect(loaded.skills.length).toBe(INITIAL_SKILLS.length);
+
+    const t1 = loaded.skills.find(s => s.id === 't1');
+    expect(t1?.mastery).toBe(100); // capped at 100
+  });
+
   it('handles corrupted JSON in localStorage gracefully without throwing', () => {
     localStorageMock.setItem('frost_music_lab_user_store_v1', 'invalid{json:');
     const store = loadUserStore();
