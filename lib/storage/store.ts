@@ -1,11 +1,15 @@
 /**
  * LocalStorage State Store & Persistence Layer
- * Manages user state, skills mastery, practice logs, streaks, and settings.
+ * Manages user state, skills mastery, practice logs, streaks, and settings with
+ * schema versioning, deterministic migration, sanitization, and corrupt data recovery.
  */
 
 import { SkillItem, PracticeAttempt, updateSkillMastery } from '../adaptive/mastery';
 
+export const CURRENT_SCHEMA_VERSION = 2;
+
 export interface UserStoreState {
+  version: number;
   examDate: string; // ISO date format, default 2026-12-08
   isRoadMode: boolean; // Phone-only / Road mode flag
   academicStreak: number;
@@ -15,9 +19,24 @@ export interface UserStoreState {
   totalMinutesStudied: number;
   skills: SkillItem[];
   history: PracticeAttempt[];
+  [key: string]: unknown; // Retain unrecognized top-level fields added by future versions
+}
+
+export interface ExportDataPayload {
+  version: number;
+  exportedAt: string;
+  app: string;
+  state: UserStoreState;
+}
+
+export interface ImportResult {
+  success: boolean;
+  state?: UserStoreState;
+  error?: string;
 }
 
 const STORAGE_KEY = 'frost_music_lab_user_store_v1';
+const CORRUPT_BACKUP_KEY_PREFIX = 'frost_music_lab_corrupt_backup';
 
 export const INITIAL_SKILLS: SkillItem[] = [
   // Theory IV
@@ -58,6 +77,7 @@ export const INITIAL_SKILLS: SkillItem[] = [
 ];
 
 export const INITIAL_STATE: UserStoreState = {
+  version: CURRENT_SCHEMA_VERSION,
   examDate: '2026-12-08',
   isRoadMode: false,
   academicStreak: 5,
@@ -69,24 +89,276 @@ export const INITIAL_STATE: UserStoreState = {
   history: [],
 };
 
+/**
+ * Sanitizes and migrates raw data to a valid, current UserStoreState.
+ * Deterministically upgrades older schema versions and handles partial/corrupted fields.
+ */
+export function migrateAndSanitizeStore(rawData: unknown): UserStoreState {
+  if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
+    return { ...INITIAL_STATE };
+  }
+
+  const rawObj = rawData as Record<string, unknown>;
+
+  // Check if rawData is wrapped in an export payload wrapper (e.g. { version, state: {...} })
+  let stateData: Record<string, unknown> = rawObj;
+  if (rawObj.state && typeof rawObj.state === 'object' && !Array.isArray(rawObj.state)) {
+    stateData = rawObj.state as Record<string, unknown>;
+  }
+
+  // Determine schema version (unversioned legacy / v1 -> default to version 1)
+  const inputVersion = typeof stateData.version === 'number' && Number.isInteger(stateData.version) && stateData.version > 0
+    ? stateData.version
+    : 1;
+
+  // Step 1: Deterministic migration from legacy schema versions
+  const migrated = { ...stateData };
+
+  if (inputVersion < 2) {
+    // Migration v1 -> v2: Add explicit schema version
+    migrated.version = CURRENT_SCHEMA_VERSION;
+  }
+
+  // Step 2: Validate and sanitize state fields
+
+  // version
+  const version = typeof migrated.version === 'number' && migrated.version > 0
+    ? Math.floor(migrated.version)
+    : CURRENT_SCHEMA_VERSION;
+
+  // examDate
+  const examDate = typeof migrated.examDate === 'string' && migrated.examDate.trim().length > 0
+    ? migrated.examDate.trim()
+    : INITIAL_STATE.examDate;
+
+  // isRoadMode
+  const isRoadMode = typeof migrated.isRoadMode === 'boolean'
+    ? migrated.isRoadMode
+    : Boolean(migrated.isRoadMode);
+
+  // academicStreak
+  const academicStreak = typeof migrated.academicStreak === 'number' && !isNaN(migrated.academicStreak) && migrated.academicStreak >= 0
+    ? Math.floor(migrated.academicStreak)
+    : INITIAL_STATE.academicStreak;
+
+  // pianoStreak
+  const pianoStreak = typeof migrated.pianoStreak === 'number' && !isNaN(migrated.pianoStreak) && migrated.pianoStreak >= 0
+    ? Math.floor(migrated.pianoStreak)
+    : INITIAL_STATE.pianoStreak;
+
+  // lastAcademicDate
+  const lastAcademicDate = typeof migrated.lastAcademicDate === 'string'
+    ? migrated.lastAcademicDate
+    : migrated.lastAcademicDate === null
+      ? null
+      : INITIAL_STATE.lastAcademicDate;
+
+  // lastPianoDate
+  const lastPianoDate = typeof migrated.lastPianoDate === 'string'
+    ? migrated.lastPianoDate
+    : migrated.lastPianoDate === null
+      ? null
+      : INITIAL_STATE.lastPianoDate;
+
+  // totalMinutesStudied
+  const totalMinutesStudied = typeof migrated.totalMinutesStudied === 'number' && !isNaN(migrated.totalMinutesStudied) && migrated.totalMinutesStudied >= 0
+    ? Math.round(migrated.totalMinutesStudied)
+    : INITIAL_STATE.totalMinutesStudied;
+
+  // skills sanitization and default merging
+  const userSkills: SkillItem[] = [];
+  const existingSkillIds = new Set<string>();
+
+  if (Array.isArray(migrated.skills)) {
+    for (const rawSkill of migrated.skills) {
+      if (rawSkill && typeof rawSkill === 'object' && !Array.isArray(rawSkill)) {
+        const skObj = rawSkill as Record<string, unknown>;
+        const id = typeof skObj.id === 'string' ? skObj.id.trim() : '';
+        if (!id) continue;
+
+        existingSkillIds.add(id);
+
+        const category = typeof skObj.category === 'string' ? (skObj.category as SkillItem['category']) : 'Theory IV';
+        const topic = typeof skObj.topic === 'string' ? skObj.topic : id;
+        const rawMastery = typeof skObj.mastery === 'number' && !isNaN(skObj.mastery) ? skObj.mastery : 50;
+        const mastery = Math.min(100, Math.max(0, Math.round(rawMastery)));
+
+        const totalAttempts = typeof skObj.totalAttempts === 'number' && !isNaN(skObj.totalAttempts) && skObj.totalAttempts >= 0
+          ? Math.floor(skObj.totalAttempts)
+          : 0;
+        const correctAttempts = typeof skObj.correctAttempts === 'number' && !isNaN(skObj.correctAttempts) && skObj.correctAttempts >= 0
+          ? Math.min(totalAttempts, Math.floor(skObj.correctAttempts))
+          : 0;
+
+        const lastPracticed = typeof skObj.lastPracticed === 'string' ? skObj.lastPracticed : '';
+
+        const recentLatencyMs = Array.isArray(skObj.recentLatencyMs)
+          ? skObj.recentLatencyMs.filter((lat): lat is number => typeof lat === 'number' && !isNaN(lat) && lat >= 0)
+          : [];
+
+        const errorHistory = Array.isArray(skObj.errorHistory)
+          ? skObj.errorHistory.filter((err): err is string => typeof err === 'string')
+          : [];
+
+        // Preserve any custom or unknown skill fields
+        const sanitizedSkill: SkillItem = {
+          ...skObj,
+          id,
+          category,
+          topic,
+          mastery,
+          totalAttempts,
+          correctAttempts,
+          lastPracticed,
+          recentLatencyMs,
+          errorHistory,
+        };
+
+        userSkills.push(sanitizedSkill);
+      }
+    }
+  }
+
+  // Merge missing initial skills (so new app versions add new default skills without overwriting existing progress)
+  for (const initSkill of INITIAL_SKILLS) {
+    if (!existingSkillIds.has(initSkill.id)) {
+      userSkills.push({ ...initSkill });
+    }
+  }
+
+  // history sanitization & capping
+  const history: PracticeAttempt[] = [];
+  if (Array.isArray(migrated.history)) {
+    for (const rawAttempt of migrated.history) {
+      if (rawAttempt && typeof rawAttempt === 'object' && !Array.isArray(rawAttempt)) {
+        const attObj = rawAttempt as Record<string, unknown>;
+        const skillId = typeof attObj.skillId === 'string' ? attObj.skillId : '';
+        if (!skillId) continue;
+
+        const isCorrect = Boolean(attObj.isCorrect);
+        const responseTimeMs = typeof attObj.responseTimeMs === 'number' && !isNaN(attObj.responseTimeMs) && attObj.responseTimeMs >= 0
+          ? Math.round(attObj.responseTimeMs)
+          : 0;
+        const date = typeof attObj.date === 'string' ? attObj.date : new Date().toISOString();
+
+        const confidenceRating = typeof attObj.confidenceRating === 'number' && !isNaN(attObj.confidenceRating)
+          ? Math.min(5, Math.max(1, Math.round(attObj.confidenceRating)))
+          : undefined;
+
+        const errorType = typeof attObj.errorType === 'string' ? attObj.errorType : undefined;
+
+        history.push({
+          skillId,
+          isCorrect,
+          responseTimeMs,
+          date,
+          ...(confidenceRating !== undefined && { confidenceRating }),
+          ...(errorType !== undefined && { errorType }),
+        });
+      }
+    }
+  }
+
+  // Cap history at 100 entries max
+  const cappedHistory = history.slice(0, 100);
+
+  // Return clean state preserving any unknown top-level keys from future versions
+  const sanitizedState: UserStoreState = {
+    ...migrated,
+    version,
+    examDate,
+    isRoadMode,
+    academicStreak,
+    pianoStreak,
+    lastAcademicDate,
+    lastPianoDate,
+    totalMinutesStudied,
+    skills: userSkills.length > 0 ? userSkills : [...INITIAL_SKILLS],
+    history: cappedHistory,
+  };
+
+  return sanitizedState;
+}
+
 export function loadUserStore(): UserStoreState {
-  if (typeof window === 'undefined') return INITIAL_STATE;
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return { ...INITIAL_STATE };
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return INITIAL_STATE;
-    const parsed = JSON.parse(raw);
-    return { ...INITIAL_STATE, ...parsed };
-  } catch {
-    return INITIAL_STATE;
+    if (!raw) return { ...INITIAL_STATE };
+
+    try {
+      const parsed = JSON.parse(raw);
+      return migrateAndSanitizeStore(parsed);
+    } catch (parseErr) {
+      console.error('Failed to parse localStorage user store, backing up corrupt data:', parseErr);
+      try {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        localStorage.setItem(`${CORRUPT_BACKUP_KEY_PREFIX}_${timestamp}`, raw);
+      } catch (backupErr) {
+        console.error('Failed to save corrupt backup in localStorage:', backupErr);
+      }
+      return { ...INITIAL_STATE };
+    }
+  } catch (err) {
+    console.error('LocalStorage load error:', err);
+    return { ...INITIAL_STATE };
   }
 }
 
-export function saveUserStore(state: UserStoreState): void {
-  if (typeof window === 'undefined') return;
+export function saveUserStore(state: UserStoreState): boolean {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return false;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const sanitized = migrateAndSanitizeStore(state);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    return true;
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
+    return false;
+  }
+}
+
+export function createExportPayload(state: UserStoreState): ExportDataPayload {
+  const sanitized = migrateAndSanitizeStore(state);
+  return {
+    version: CURRENT_SCHEMA_VERSION,
+    exportedAt: new Date().toISOString(),
+    app: 'frost_music_lab',
+    state: sanitized,
+  };
+}
+
+export function importUserStore(jsonData: string | unknown): ImportResult {
+  try {
+    let parsed: unknown = jsonData;
+    if (typeof jsonData === 'string') {
+      const trimmed = jsonData.trim();
+      if (!trimmed) {
+        return { success: false, error: 'Import data is empty.' };
+      }
+      parsed = JSON.parse(trimmed);
+    }
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { success: false, error: 'Invalid import format. Expected a JSON object.' };
+    }
+
+    const migratedState = migrateAndSanitizeStore(parsed);
+
+    // Save imported state immediately to localStorage
+    const saved = saveUserStore(migratedState);
+
+    return {
+      success: true,
+      state: migratedState,
+      ...(!saved && { error: 'State was parsed successfully but could not be saved to localStorage.' }),
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? `Invalid JSON structure: ${err.message}` : 'Failed to parse import data.',
+    };
   }
 }
 
@@ -95,33 +367,35 @@ export function recordPracticeAttemptInStore(
   attempt: PracticeAttempt,
   durationMinutes: number = 2
 ): UserStoreState {
-  const targetSkill = currentState.skills.find(s => s.id === attempt.skillId);
-  if (!targetSkill) return currentState;
+  const sanitizedState = migrateAndSanitizeStore(currentState);
+  const targetSkill = sanitizedState.skills.find(s => s.id === attempt.skillId);
+  if (!targetSkill) return sanitizedState;
 
   const updatedSkill = updateSkillMastery(targetSkill, attempt);
-  const newSkills = currentState.skills.map(s => (s.id === attempt.skillId ? updatedSkill : s));
-  const newHistory = [attempt, ...currentState.history.slice(0, 99)];
+  const newSkills = sanitizedState.skills.map(s => (s.id === attempt.skillId ? updatedSkill : s));
+  const newHistory = [attempt, ...sanitizedState.history.slice(0, 99)];
 
   const today = attempt.date ? attempt.date.split('T')[0] : new Date().toISOString().split('T')[0];
-  let academicStreak = currentState.academicStreak;
-  let pianoStreak = currentState.pianoStreak;
+  let academicStreak = sanitizedState.academicStreak;
+  let pianoStreak = sanitizedState.pianoStreak;
 
   const getDaysDiff = (dateStr: string | null) => {
     if (!dateStr) return null;
     const past = new Date(dateStr).getTime();
     const curr = new Date(today).getTime();
+    if (isNaN(past) || isNaN(curr)) return null;
     return Math.floor((curr - past) / (1000 * 60 * 60 * 24));
   };
 
   const isPiano = targetSkill.category === 'Class Piano IV' || targetSkill.category === 'Class Piano III';
 
-  let newLastAcademicDate = currentState.lastAcademicDate;
-  let newLastPianoDate = currentState.lastPianoDate;
+  let newLastAcademicDate = sanitizedState.lastAcademicDate;
+  let newLastPianoDate = sanitizedState.lastPianoDate;
 
   // Streak only advances on CORRECT answers
   if (attempt.isCorrect) {
     if (isPiano) {
-      const pianoDiff = getDaysDiff(currentState.lastPianoDate);
+      const pianoDiff = getDaysDiff(sanitizedState.lastPianoDate);
       if (pianoDiff === null || pianoDiff > 1) {
         pianoStreak = 1;
       } else if (pianoDiff === 1) {
@@ -129,7 +403,7 @@ export function recordPracticeAttemptInStore(
       }
       newLastPianoDate = today;
     } else {
-      const academicDiff = getDaysDiff(currentState.lastAcademicDate);
+      const academicDiff = getDaysDiff(sanitizedState.lastAcademicDate);
       if (academicDiff === null || academicDiff > 1) {
         academicStreak = 1;
       } else if (academicDiff === 1) {
@@ -140,12 +414,12 @@ export function recordPracticeAttemptInStore(
   }
 
   const updatedState: UserStoreState = {
-    ...currentState,
+    ...sanitizedState,
     academicStreak,
     pianoStreak,
     lastAcademicDate: newLastAcademicDate,
     lastPianoDate: newLastPianoDate,
-    totalMinutesStudied: currentState.totalMinutesStudied + (attempt.isCorrect ? durationMinutes : 0),
+    totalMinutesStudied: sanitizedState.totalMinutesStudied + (attempt.isCorrect ? durationMinutes : 0),
     skills: newSkills,
     history: newHistory,
   };

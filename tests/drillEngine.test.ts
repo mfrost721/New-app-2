@@ -5,7 +5,7 @@ import {
   DrillCategory,
 } from '../lib/music/drillEngine';
 import { isZRelatedPair, Z_RELATED_PAIRS } from '../lib/music/pitchClass';
-import { recordPracticeAttemptInStore, UserStoreState, INITIAL_SKILLS } from '../lib/storage/store';
+import { recordPracticeAttemptInStore, UserStoreState, INITIAL_SKILLS, INITIAL_STATE } from '../lib/storage/store';
 import { FORMAL_ANALYSIS_DATABASE } from '../lib/music/formalAnalysis';
 
 describe('Drill Engine & Question Generator', () => {
@@ -86,6 +86,7 @@ describe('Formal Analysis Database', () => {
 
 describe('Streak Behavior & Protection', () => {
   const initialTestState: UserStoreState = {
+    ...INITIAL_STATE,
     examDate: '2026-12-08',
     isRoadMode: false,
     academicStreak: 5,
