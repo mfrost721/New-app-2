@@ -76,6 +76,7 @@ function PitchClassClock({
               role="button"
               tabIndex={0}
               aria-label={`Toggle pitch class ${pc}${showNoteNames ? ` (${noteName})` : ''}`}
+              aria-pressed={isSelected}
               onClick={() => handleToggle(pc)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -83,7 +84,7 @@ function PitchClassClock({
                   handleToggle(pc);
                 }
               }}
-              className="cursor-pointer transition-transform duration-150 hover:scale-110 origin-center"
+              className="cursor-pointer transition-transform duration-150 hover:scale-110 origin-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
               style={{ transformOrigin: `${x}px ${y}px` }}
             >
               <circle

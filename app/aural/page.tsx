@@ -10,6 +10,7 @@ import { Mic, Volume2, Check } from 'lucide-react';
 export default function AuralPage() {
   const [activeTab, setActiveTab] = useState<'noteInKey' | 'chordsAnd64' | 'dictation' | 'sightSinging'>('noteInKey');
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [micError, setMicError] = useState<string | null>(null);
 
   // Note-in-key ladder state
   const targetDegree = 4; // Mi (3rd degree)
@@ -66,11 +67,11 @@ export default function AuralPage() {
         clearInterval(interval);
         stream.getTracks().forEach(t => t.stop());
         setActiveStream(null);
-        audioCtx.close();
+        void audioCtx.close();
         setIsRecording(false);
       }, 5000);
     } catch {
-      alert('Microphone access is required for Sight-Singing Studio.');
+      setMicError('Microphone access is required for Sight-Singing Studio.');
     }
   };
 
@@ -277,6 +278,10 @@ export default function AuralPage() {
               <span>{isRecording ? 'Listening (5s)...' : 'Start Recording (Prototype)'}</span>
             </button>
           </div>
+
+          {micError && (
+            <p role="alert" className="text-sm text-rose-400 mt-2">{micError}</p>
+          )}
 
           <ScoreViewer title="Target Sight-Singing Excerpt (Level IV)" />
 

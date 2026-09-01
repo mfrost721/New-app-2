@@ -9,10 +9,16 @@ import { Zap, Clock, CheckCircle2 } from 'lucide-react';
 
 export default function HomeDashboard() {
   const [store, setStore] = useState<UserStoreState | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const loaded = loadUserStore();
     setStore(loaded);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
   }, []);
 
   const theoryReadiness = React.useMemo(
@@ -34,7 +40,7 @@ export default function HomeDashboard() {
   );
 
   const daysLeft = store
-    ? Math.max(0, Math.ceil((new Date(store.examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(0, Math.ceil((new Date(store.examDate).getTime() - now) / (1000 * 60 * 60 * 24)))
     : 0;
 
   if (!store || !theoryReadiness || !auralReadiness || !pianoReadiness || !prescription) {

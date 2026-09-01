@@ -166,6 +166,7 @@ export default function TheoryPage() {
           <div className="flex space-x-3 max-w-md">
             <input
               type="text"
+              aria-label="Row transformation answer"
               placeholder="Enter row transformation (e.g. 7)"
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
