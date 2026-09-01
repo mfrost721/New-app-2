@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { generateTwelveToneMatrix } from '@/lib/music/twelveTone';
 import { pitchClassToNote } from '@/lib/music/pitchClass';
 
@@ -19,7 +19,12 @@ export default function MatrixGrid({
   showNotes = true,
   interactive = false,
 }: MatrixGridProps) {
-  const solutionMatrix = generateTwelveToneMatrix(p0Row);
+  // Performance optimization: Memoize 12x12 matrix calculation based on serialized P0 row.
+  // In interactive speed runs or practice modes, parent state updates on every cell keystroke.
+  // Memoization prevents re-calculating row/inversion transformations and re-allocating 13 matrix arrays on every render.
+  const p0Key = p0Row.join(',');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const solutionMatrix = useMemo(() => generateTwelveToneMatrix(p0Row), [p0Key]);
 
   return (
     <div className="overflow-x-auto p-4 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl select-none">

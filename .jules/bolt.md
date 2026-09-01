@@ -1,0 +1,3 @@
+## 2025-05-15 - Memoize Twelve-Tone Matrix Calculation in MatrixGrid
+**Learning:** Re-rendering interactive grid components like `MatrixGrid` on every cell keystroke executes expensive pure computations (like `generateTwelveToneMatrix`, generating a 12x12 matrix array) repeatedly if not wrapped with `useMemo`. Memoizing by serialized row key (`p0Row.join(',')`) eliminates unnecessary 12x12 array allocations during interactive typing.
+**Action:** Always wrap non-trivial matrix and set calculations in interactive React components with `useMemo` using stringified key dependencies when props are array references.
