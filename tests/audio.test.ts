@@ -236,6 +236,58 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
       expect(evaluation.isCorrect).toBe(false);
       expect(evaluation.feedback).toContain('does not match target');
     });
+
+    it('rejects octave shifts when allowOctaveShift option is false', () => {
+      const mockResultC5: PitchAnalysisResult = {
+        frequency: 523.25,
+        midi: 72, // C5 instead of target 60 C4
+        pitchClass: 0,
+        octave: 5,
+        noteName: 'C',
+        fullName: 'C5',
+        centsDeviation: 0,
+        clarity: 0.9,
+        solfege: 'Do',
+        scaleDegree: '1',
+      };
+
+      const frames = [mockResultC5, mockResultC5, mockResultC5, mockResultC5];
+      const evaluation = evaluateSungPitch(frames, 60, { allowOctaveShift: false });
+
+      expect(evaluation.isCorrect).toBe(false);
+      expect(evaluation.feedback).toContain('does not match target');
+    });
+
+    it('grades sung pitch based on cents deviation tiers', () => {
+      const createFrameWithCents = (cents: number): PitchAnalysisResult => ({
+        frequency: 261.63,
+        midi: 60,
+        pitchClass: 0,
+        octave: 4,
+        noteName: 'C',
+        fullName: 'C4',
+        centsDeviation: cents,
+        clarity: 0.9,
+        solfege: 'Do',
+        scaleDegree: '1',
+      });
+
+      // Tier 1: <= 15 cents -> pitch score 100
+      const resT1 = evaluateSungPitch(Array(5).fill(createFrameWithCents(10)), 60);
+      expect(resT1.pitchScore).toBe(100);
+
+      // Tier 2: 16 to 35 cents -> pitch score 88
+      const resT2 = evaluateSungPitch(Array(5).fill(createFrameWithCents(25)), 60);
+      expect(resT2.pitchScore).toBe(88);
+
+      // Tier 3: 36 to tolerance (50 cents) -> pitch score 75
+      const resT3 = evaluateSungPitch(Array(5).fill(createFrameWithCents(45)), 60);
+      expect(resT3.pitchScore).toBe(75);
+
+      // Exceeds tolerance (55 cents > 50) -> isCorrect false
+      const resOff = evaluateSungPitch(Array(5).fill(createFrameWithCents(55)), 60, { toleranceCents: 50 });
+      expect(resOff.isCorrect).toBe(false);
+    });
   });
 });
 

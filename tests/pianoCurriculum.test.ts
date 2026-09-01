@@ -123,6 +123,36 @@ describe('Class Piano Automated & Rubric Grading Engine', () => {
     expect(rubric.gradeLabel).toBe('High Distinction');
     expect(rubric.categories.length).toBe(4);
   });
+
+  it('detects timing hesitations and rushed notes in MIDI sequences', () => {
+    const targetNotes = [60, 62, 64, 65];
+    // Target BPM = 100 -> 600ms per note expected
+    const playedEvents: PlayedNoteEvent[] = [
+      { midi: 60, timestampMs: 0 },
+      { midi: 62, timestampMs: 2000 }, // hesitation: ratio 2000 / 600 = 3.33 (> 2.2)
+      { midi: 64, timestampMs: 2100 }, // rushed: delta 100ms vs expected 600ms (ratio 0.166 < 0.4)
+      { midi: 65, timestampMs: 2700 },
+    ];
+
+    const result = evaluateMidiSequence(playedEvents, targetNotes, 100, 'MIDI');
+    expect(result.timingErrors.length).toBe(2);
+    expect(result.timingErrors[0].issue).toBe('hesitation');
+    expect(result.timingErrors[1].issue).toBe('rushed');
+  });
+
+  it('clamps rubric scores strictly between 0 and 25 per category', () => {
+    const rubric = evaluateRubricGrading({
+      noteAccuracy: 50, // exceeds max 25 -> 25
+      tempoRhythm: -10, // negative -> 0
+      techniqueFingering: 25, // 25
+      harmonyVoiceLeading: 10, // 10
+    });
+
+    expect(rubric.categories[0].score).toBe(25);
+    expect(rubric.categories[1].score).toBe(0);
+    expect(rubric.totalScore).toBe(60);
+    expect(rubric.gradeLabel).toBe('Needs Revision');
+  });
 });
 
 describe('Piano Progress & Storage Integration', () => {

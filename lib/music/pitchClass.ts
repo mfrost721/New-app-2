@@ -222,7 +222,7 @@ export function areSetsEquivalent(setA: number[], setB: number[]): { equivalent:
   const normB = getNormalOrder(setB);
 
   for (let n = 0; n < 12; n++) {
-    const tA = toPitchClassSet(transposeSet(normA, n));
+    const tA = getNormalOrder(transposeSet(normA, n));
     if (tA.length === normB.length && tA.every((v, i) => v === normB[i])) {
       return { equivalent: true, transformation: `T${n}` };
     }
@@ -230,7 +230,7 @@ export function areSetsEquivalent(setA: number[], setB: number[]): { equivalent:
 
   // Check TnI
   for (let n = 0; n < 12; n++) {
-    const tiA = toPitchClassSet(invertSet(normA, n));
+    const tiA = getNormalOrder(invertSet(normA, n));
     if (tiA.length === normB.length && tiA.every((v, i) => v === normB[i])) {
       return { equivalent: true, transformation: `T${n}I` };
     }
