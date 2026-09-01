@@ -115,11 +115,9 @@ export default function AuralPage() {
         </div>
 
         {/* Tab Switcher */}
-        <div role="tablist" aria-label="Aural skills drill sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
+        <div aria-label="Aural skills drill sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'noteInKey'}
             onClick={() => setActiveTab('noteInKey')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'noteInKey' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -127,8 +125,6 @@ export default function AuralPage() {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'chordsAnd64'}
             onClick={() => setActiveTab('chordsAnd64')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'chordsAnd64' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -136,8 +132,6 @@ export default function AuralPage() {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'dictation'}
             onClick={() => setActiveTab('dictation')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'dictation' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -145,8 +139,6 @@ export default function AuralPage() {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'sightSinging'}
             onClick={() => setActiveTab('sightSinging')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'sightSinging' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >

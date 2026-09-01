@@ -60,8 +60,9 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // If html page request, return cached index page or root
         if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('/');
+          return caches.match('/').then((response) => response || new Response('Offline', { status: 503, statusText: 'Service Unavailable' }));
         }
+        return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
       });
     })
   );

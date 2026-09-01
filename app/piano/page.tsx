@@ -55,11 +55,9 @@ export default function PianoPage() {
         </div>
 
         {/* Tab Switcher */}
-        <div role="tablist" aria-label="Class piano drill sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
+        <div aria-label="Class piano drill sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'technique'}
             onClick={() => setActiveTab('technique')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'technique' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -67,8 +65,6 @@ export default function PianoPage() {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'harmonization'}
             onClick={() => setActiveTab('harmonization')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'harmonization' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -76,8 +72,6 @@ export default function PianoPage() {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'happyBirthday'}
             onClick={() => setActiveTab('happyBirthday')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'happyBirthday' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
@@ -85,8 +79,6 @@ export default function PianoPage() {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'sightReading'}
             onClick={() => setActiveTab('sightReading')}
             className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'sightReading' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
