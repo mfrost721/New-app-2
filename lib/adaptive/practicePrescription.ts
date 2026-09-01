@@ -24,7 +24,7 @@ export function generatePracticePrescription(
 ): SessionPrescription {
   // Filter out piano technique if in Road Mode
   let eligibleSkills = isRoadMode
-    ? skills.filter(s => s.category !== 'Class Piano IV')
+    ? skills.filter(s => s.category !== 'Class Piano IV' && s.category !== 'Class Piano III')
     : [...skills];
 
   if (eligibleSkills.length === 0) {
