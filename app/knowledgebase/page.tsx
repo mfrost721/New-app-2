@@ -85,6 +85,7 @@ export default function KnowledgeBasePage() {
         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
+          aria-label="Search topics in knowledge base"
           placeholder="Search topics, e.g. pitch-class vector, 6/4 chord, fingering..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -95,7 +96,7 @@ export default function KnowledgeBasePage() {
       {/* Articles Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filtered.map((article) => (
-          <div key={article.id} className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
+          <article key={article.id} className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
             <div>
               <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded">
                 {article.category}
@@ -106,12 +107,12 @@ export default function KnowledgeBasePage() {
 
             <Link
               href={article.drillUrl}
-              className="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors pt-2"
+              className="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors pt-2 min-h-[44px] items-center"
             >
               <span>Practice This Concept</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
-          </div>
+          </article>
         ))}
       </div>
     </div>

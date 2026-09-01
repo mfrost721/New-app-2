@@ -36,7 +36,7 @@ const getWhiteKeyIndex = (midi: number) => {
   return octave * 7 + (WHITE_KEY_OFFSETS[pc] ?? 0);
 };
 
-export default function KeyboardVisualizer({
+function KeyboardVisualizer({
   startMidi = 60,
   numKeys = 25,
   activeMidis = [],
@@ -45,6 +45,11 @@ export default function KeyboardVisualizer({
   interactive = true,
 }: KeyboardVisualizerProps) {
   const [pressedMidis, setPressedMidis] = useState<number[]>([]);
+  const onNoteClickRef = React.useRef(onNoteClick);
+
+  useEffect(() => {
+    onNoteClickRef.current = onNoteClick;
+  }, [onNoteClick]);
 
   useEffect(() => {
     void midiController.init();
@@ -54,13 +59,13 @@ export default function KeyboardVisualizer({
       if (msg.type === 'noteon') {
         soundEngine.playNote(msg.note);
         setPressedMidis(prev => [...prev.filter(n => n !== msg.note), msg.note]);
-        if (onNoteClick) onNoteClick(msg.note);
+        if (onNoteClickRef.current) onNoteClickRef.current(msg.note);
       } else {
         setPressedMidis(prev => prev.filter(n => n !== msg.note));
       }
     });
     return cleanup;
-  }, [onNoteClick]);
+  }, []);
 
   const keys = Array.from({ length: numKeys }, (_, i) => startMidi + i);
 
@@ -141,3 +146,5 @@ export default function KeyboardVisualizer({
     </div>
   );
 }
+
+export default React.memo(KeyboardVisualizer);
