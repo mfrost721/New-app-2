@@ -64,22 +64,22 @@ export default function PianoPage() {
     setUserStore(loadUserStore());
   }, []);
 
-  // Filter exercises
-  let currentExercise: PianoExercise | undefined;
-  if (selectedExerciseId.startsWith('dynamic_')) {
-    currentExercise = createDynamicScaleExercise(customKey, customScaleType, selectedLevel);
-  } else {
-    currentExercise = CURRICULUM_EXERCISES.find(ex => ex.id === selectedExerciseId);
-  }
+  const currentExercise = React.useMemo<PianoExercise>(() => {
+    let ex: PianoExercise | undefined;
+    if (selectedExerciseId.startsWith('dynamic_')) {
+      ex = createDynamicScaleExercise(customKey, customScaleType, selectedLevel);
+    } else {
+      ex = CURRICULUM_EXERCISES.find(item => item.id === selectedExerciseId);
+    }
+    return ex || CURRICULUM_EXERCISES[0];
+  }, [selectedExerciseId, customKey, customScaleType, selectedLevel]);
 
-  if (!currentExercise) {
-    currentExercise = CURRICULUM_EXERCISES[0];
-  }
-
-  const exercisesForLevel = getPianoExercisesByLevel(selectedLevel);
-  const filteredExercises = selectedCategory === 'all'
-    ? exercisesForLevel
-    : exercisesForLevel.filter(ex => ex.category === selectedCategory);
+  const filteredExercises = React.useMemo(() => {
+    const exercisesForLevel = getPianoExercisesByLevel(selectedLevel);
+    return selectedCategory === 'all'
+      ? exercisesForLevel
+      : exercisesForLevel.filter(ex => ex.category === selectedCategory);
+  }, [selectedLevel, selectedCategory]);
 
   // Reset attempt buffer when exercise changes
   const handleSelectExercise = (id: string) => {

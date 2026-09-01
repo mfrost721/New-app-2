@@ -30,6 +30,8 @@ const WHITE_KEY_OFFSETS: Record<number, number> = {
   0: 0, 1: 1, 2: 1, 3: 2, 4: 2, 5: 3, 6: 4, 7: 4, 8: 5, 9: 5, 10: 6, 11: 6,
 };
 
+const BLACK_PITCH_CLASSES = new Set([1, 3, 6, 8, 10]);
+
 const getWhiteKeyIndex = (midi: number) => {
   const octave = Math.floor(midi / 12);
   const pc = ((midi % 12) + 12) % 12;
@@ -67,7 +69,9 @@ function KeyboardVisualizer({
     return cleanup;
   }, []);
 
-  const keys = Array.from({ length: numKeys }, (_, i) => startMidi + i);
+  const keys = React.useMemo(() => {
+    return Array.from({ length: numKeys }, (_, i) => startMidi + i);
+  }, [startMidi, numKeys]);
 
   const getLabel = (midi: number) => {
     const pc = ((midi % 12) + 12) % 12;
@@ -81,7 +85,7 @@ function KeyboardVisualizer({
 
   const isBlackKey = (midi: number) => {
     const pc = ((midi % 12) + 12) % 12;
-    return [1, 3, 6, 8, 10].includes(pc);
+    return BLACK_PITCH_CLASSES.has(pc);
   };
 
   const handleKeyClick = (midi: number) => {

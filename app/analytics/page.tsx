@@ -13,6 +13,11 @@ export default function AnalyticsPage() {
     });
   }, []);
 
+  const weakestSkills = React.useMemo(() => {
+    if (!store) return [];
+    return [...store.skills].sort((a, b) => a.mastery - b.mastery).slice(0, 5);
+  }, [store]);
+
   if (!store) return <div className="p-8 text-center text-slate-400">Loading analytics...</div>;
 
   const exportDataJson = () => {
@@ -24,8 +29,6 @@ export default function AnalyticsPage() {
     downloadAnchor.click();
     downloadAnchor.remove();
   };
-
-  const weakestSkills = [...store.skills].sort((a, b) => a.mastery - b.mastery).slice(0, 5);
 
   return (
     <div className="space-y-8">
