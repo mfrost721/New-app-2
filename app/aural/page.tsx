@@ -191,56 +191,56 @@ export default function AuralPage() {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto">
+        <div role="tablist" aria-label="Aural skills drill sections" className="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'noteInKey'}
             onClick={() => {
               stopRecordingAndCleanup();
               soundEngine.stopAll();
               setActiveTab('noteInKey');
             }}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
-              activeTab === 'noteInKey' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
+            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'noteInKey' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Note-in-Key
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'chordsAnd64'}
             onClick={() => {
               stopRecordingAndCleanup();
               soundEngine.stopAll();
               setActiveTab('chordsAnd64');
             }}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
-              activeTab === 'chordsAnd64' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
+            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'chordsAnd64' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Chords & 6/4 Functions
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'dictation'}
             onClick={() => {
               stopRecordingAndCleanup();
               soundEngine.stopAll();
               setActiveTab('dictation');
             }}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
-              activeTab === 'dictation' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
+            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'dictation' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Melodic Dictation
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'sightSinging'}
             onClick={() => {
               stopRecordingAndCleanup();
               soundEngine.stopAll();
               setActiveTab('sightSinging');
             }}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
-              activeTab === 'sightSinging' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
+            className={`px-3 py-2.5 min-h-[44px] rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${activeTab === 'sightSinging' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Sight-Singing Studio
           </button>
@@ -248,14 +248,14 @@ export default function AuralPage() {
       </div>
 
       {feedback && (
-        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-bold flex items-center space-x-2">
+        <div role="status" aria-live="polite" className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-bold flex items-center space-x-2">
           <Check className="w-4 h-4 shrink-0" />
           <span>{feedback}</span>
         </div>
       )}
 
       {micError && (
-        <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-xl font-bold flex items-center space-x-2">
+        <div role="alert" aria-live="assertive" className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-xl font-bold flex items-center space-x-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{micError}</span>
         </div>
@@ -451,7 +451,7 @@ export default function AuralPage() {
 
           {/* Real-time detected Pitch Display */}
           {pitchResult ? (
-            <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 grid grid-cols-2 md:grid-cols-4 gap-4 font-mono text-xs">
+            <div role="status" aria-live="polite" className="p-4 bg-slate-950 rounded-xl border border-slate-800 grid grid-cols-2 md:grid-cols-4 gap-4 font-mono text-xs">
               <div>
                 <span className="text-slate-400 block text-[10px]">DETECTED PITCH</span>
                 <span className="text-amber-400 font-bold text-base">{pitchResult.fullName}</span>
