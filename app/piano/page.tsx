@@ -60,8 +60,32 @@ export default function PianoPage() {
   // Sight-reading timer state
   const [previewCountdown, setPreviewCountdown] = useState<number | null>(null);
 
+  const stopMicListening = () => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(t => t.stop());
+      micStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try {
+        void audioContextRef.current.close();
+      } catch {
+        // Safe catch
+      }
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    setIsMicListening(false);
+  };
+
   useEffect(() => {
     setUserStore(loadUserStore());
+    return () => {
+      stopMicListening();
+    };
   }, []);
 
   // Filter exercises
@@ -134,18 +158,32 @@ export default function PianoPage() {
   // Audio Microphone Stream Control
   const toggleMicListening = async () => {
     if (isMicListening) {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (micStreamRef.current) micStreamRef.current.getTracks().forEach(t => t.stop());
-      setIsMicListening(false);
+      stopMicListening();
       return;
     }
+
+    stopMicListening();
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = stream;
 
-      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) {
+        stream.getTracks().forEach(t => t.stop());
+        micStreamRef.current = null;
+        setStatusMessage('Web Audio API is not supported in this browser.');
+        return;
+      }
+
+      const audioCtx = new AudioCtx();
       audioContextRef.current = audioCtx;
+
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
 
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
@@ -160,7 +198,9 @@ export default function PianoPage() {
       let lastDetectedMidi = -1;
 
       const processAudio = () => {
-        if (!analyserRef.current) return;
+        if (!analyserRef.current || !audioContextRef.current || audioContextRef.current.state === 'closed') {
+          return;
+        }
         analyserRef.current.getFloatTimeDomainData(buffer);
         const pitch = autoCorrelate(buffer, audioCtx.sampleRate);
 

@@ -82,6 +82,7 @@ export default function AuralPage() {
   };
 
   const handleMicStart = async () => {
+    stopRecordingAndCleanup();
     setMicError(null);
     setSingingScore(null);
     setPitchResult(null);
@@ -101,11 +102,16 @@ export default function AuralPage() {
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) {
         stream.getTracks().forEach(t => t.stop());
+        activeStreamRef.current = null;
         setMicError('Web Audio API is not supported in this browser.');
         return;
       }
       const audioCtx = new AudioCtx();
       audioCtxRef.current = audioCtx;
+
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
 
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
@@ -116,6 +122,9 @@ export default function AuralPage() {
       const buffer = new Float32Array(analyser.fftSize);
 
       recordingIntervalRef.current = setInterval(() => {
+        if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+          return;
+        }
         analyser.getFloatTimeDomainData(buffer);
         const res = autoCorrelate(buffer, audioCtx.sampleRate, {
           clarityThreshold: 0.6,

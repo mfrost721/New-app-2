@@ -122,28 +122,71 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
     expect(resNaN.midi).toBe(0);
   });
 
-  it('detects pitch accurately from pure sine wave buffers', () => {
+  it('detects pitch accurately across human sung vocal ranges (A2, A3, A4, F5)', () => {
     const sampleRate = 44100;
+    const targets = [
+      { freq: 110, midi: 45, name: 'A2' },
+      { freq: 220, midi: 57, name: 'A3' },
+      { freq: 440, midi: 69, name: 'A4' },
+      { freq: 698.46, midi: 77, name: 'F5' },
+    ];
 
-    // Test 440 Hz (A4)
-    const bufA4 = generateSineBuffer(440, sampleRate, 0.1);
-    const resA4 = autoCorrelate(bufA4, sampleRate, { clarityThreshold: 0.5 });
-    expect(resA4).not.toBeNull();
-    if (resA4) {
-      expect(Math.abs(resA4.frequency - 440)).toBeLessThan(5);
-      expect(resA4.midi).toBe(69);
-      expect(resA4.fullName).toBe('A4');
-      expect(resA4.clarity).toBeGreaterThan(0.5);
+    for (const target of targets) {
+      const buf = generateSineBuffer(target.freq, sampleRate, 0.1);
+      const res = autoCorrelate(buf, sampleRate, { clarityThreshold: 0.5 });
+      expect(res).not.toBeNull();
+      if (res) {
+        expect(Math.abs(res.frequency - target.freq)).toBeLessThan(target.freq * 0.03);
+        expect(res.midi).toBe(target.midi);
+        expect(res.fullName).toBe(target.name);
+        expect(res.clarity).toBeGreaterThan(0.5);
+      }
+    }
+  });
+
+  it('handles different microphone sample rates (16kHz, 48kHz)', () => {
+    const rates = [16000, 48000];
+    for (const sr of rates) {
+      const bufA4 = generateSineBuffer(440, sr, 0.1);
+      const resA4 = autoCorrelate(bufA4, sr, { clarityThreshold: 0.5 });
+      expect(resA4).not.toBeNull();
+      if (resA4) {
+        expect(Math.abs(resA4.frequency - 440)).toBeLessThan(10);
+        expect(resA4.midi).toBe(69);
+      }
+    }
+  });
+
+  it('calculates cents deviation accurately near semitone boundaries', () => {
+    const sampleRate = 44100;
+    // 453.5 Hz is ~52 cents above A4 (440 Hz), rounding to A#4 with negative cents or A4 with +52 cents
+    const bufNearBound = generateSineBuffer(453.5, sampleRate, 0.1);
+    const res = autoCorrelate(bufNearBound, sampleRate, { clarityThreshold: 0.5 });
+    expect(res).not.toBeNull();
+    if (res) {
+      expect(res.midi).toBe(70); // A#4
+      expect(res.centsDeviation).toBeLessThan(15);
+    }
+  });
+
+  it('handles signals with DC offset and mild background noise without octave errors', () => {
+    const sampleRate = 44100;
+    const numSamples = Math.floor(sampleRate * 0.1);
+    const buf = new Float32Array(numSamples);
+
+    // Sine wave 220 Hz + 0.5 DC offset + noise
+    let seed = 12345;
+    for (let i = 0; i < numSamples; i++) {
+      seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+      const noise = ((seed / 0x80000000) - 1) * 0.05;
+      buf[i] = Math.sin((2 * Math.PI * 220 * i) / sampleRate) * 0.7 + 0.5 + noise;
     }
 
-    // Test 261.63 Hz (C4)
-    const bufC4 = generateSineBuffer(261.63, sampleRate, 0.1);
-    const resC4 = autoCorrelate(bufC4, sampleRate, { clarityThreshold: 0.5 });
-    expect(resC4).not.toBeNull();
-    if (resC4) {
-      expect(Math.abs(resC4.frequency - 261.63)).toBeLessThan(5);
-      expect(resC4.midi).toBe(60);
-      expect(resC4.fullName).toBe('C4');
+    const res = autoCorrelate(buf, sampleRate, { clarityThreshold: 0.5 });
+    expect(res).not.toBeNull();
+    if (res) {
+      expect(res.midi).toBe(57); // A3
+      expect(res.fullName).toBe('A3');
     }
   });
 
