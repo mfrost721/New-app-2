@@ -153,7 +153,10 @@ class SoundEngine {
     if (typeof window !== 'undefined') {
       const cleanupDelayMs = (startOffsetSec + safeDuration + 0.1) * 1000;
       const tid = window.setTimeout(() => {
+        masterGain.disconnect();
         this.activeNodes.delete(masterNodeRef);
+        const idx = this.scheduledTimeouts.indexOf(tid);
+        if (idx !== -1) this.scheduledTimeouts.splice(idx, 1);
       }, cleanupDelayMs) as unknown as number;
       this.scheduledTimeouts.push(tid);
     }
@@ -215,7 +218,8 @@ class SoundEngine {
    * Plays a rhythmic pattern / sequence of rhythmic events.
    */
   public playRhythmPattern(events: RhythmEvent[], bpm = 120): void {
-    const secondsPerBeat = 60 / bpm;
+    const safeBpm = Math.max(1, bpm);
+    const secondsPerBeat = 60 / safeBpm;
     events.forEach(event => {
       const startOffsetSec = event.timeOffsetSec * secondsPerBeat;
       const durationSec = (event.durationSec ?? 0.25) * secondsPerBeat;

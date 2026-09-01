@@ -63,8 +63,11 @@ function generateSineBuffer(freq: number, sampleRate = 44100, durationSec = 0.1)
 function generateNoiseBuffer(sampleRate = 44100, durationSec = 0.1): Float32Array {
   const numSamples = Math.floor(sampleRate * durationSec);
   const buffer = new Float32Array(numSamples);
+  // Deterministic pseudo-random noise using a simple LCG to avoid flaky tests
+  let seed = 42;
   for (let i = 0; i < numSamples; i++) {
-    buffer[i] = (Math.random() * 2 - 1) * 0.5;
+    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+    buffer[i] = ((seed / 0x80000000) - 1) * 0.5;
   }
   return buffer;
 }
