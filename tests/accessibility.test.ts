@@ -27,4 +27,21 @@ describe('PWA & Accessibility Verification', () => {
     expect(swContent).toContain("'/aural'");
     expect(swContent).toContain("'/piano'");
   });
+
+  it('ensures package.json and lockfiles are present and non-empty', () => {
+    const pkgPath = path.join(process.cwd(), 'package.json');
+    const pnpmLockPath = path.join(process.cwd(), 'pnpm-lock.yaml');
+    const pkgLockPath = path.join(process.cwd(), 'package-lock.json');
+
+    expect(fs.existsSync(pkgPath)).toBe(true);
+    expect(fs.existsSync(pnpmLockPath)).toBe(true);
+    expect(fs.statSync(pnpmLockPath).size).toBeGreaterThan(0);
+    expect(fs.existsSync(pkgLockPath)).toBe(true);
+    expect(fs.statSync(pkgLockPath).size).toBeGreaterThan(0);
+
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    expect(pkg.name).toBe('frost-music-lab');
+    expect(pkg.scripts.typecheck).toBeDefined();
+    expect(pkg.scripts['check:integrity']).toBeDefined();
+  });
 });
