@@ -13,6 +13,7 @@ export interface SkillItem {
   totalAttempts: number;
   correctAttempts: number;
   lastPracticed: string; // ISO date string
+  nextReviewDate?: string; // ISO date string for spaced repetition
   recentLatencyMs: number[];
   errorHistory: string[];
 }
@@ -29,8 +30,8 @@ export interface PracticeAttempt {
 export interface ExamReadiness {
   category: ExamCategory;
   masteryPercentage: number;
-  readinessLabel: 'LOW' | 'MODERATE' | 'HIGH' | 'EXAM READY';
-  passingProbability: number; // 0 to 100
+  readinessLabel: 'DEVELOPING' | 'SECURE' | 'EXAM READY';
+  passingProbability: number; // 0 to 100 (Heuristic estimate)
   weakestTopics: string[];
   strongestTopics: string[];
 }
@@ -46,13 +47,10 @@ export function updateSkillMastery(
 
   let delta = 0;
   if (isCorrect) {
-    // Reward depends on confidence: higher reward if low confidence turns out correct,
-    // bonus if quick answer
     const speedBonus = responseTimeMs < 4000 ? 2 : 0;
     const confidenceBonus = confidenceRating <= 2 ? 3 : 1;
     delta = 5 + speedBonus + confidenceBonus;
   } else {
-    // Penalty is higher if user was overconfident (wrong + confident = high penalty)
     const overconfidencePenalty = confidenceRating >= 4 ? 6 : 2;
     delta = -(8 + overconfidencePenalty);
   }
@@ -63,19 +61,24 @@ export function updateSkillMastery(
     ? [...(currentSkill.errorHistory || []).slice(-19), errorType]
     : (currentSkill.errorHistory || []);
 
+  // Compute next review date (spaced repetition interval based on mastery)
+  const daysInterval = Math.max(1, Math.round((newMastery / 100) * 14));
+  const nextReview = new Date(new Date(attempt.date).getTime() + daysInterval * 24 * 60 * 60 * 1000).toISOString();
+
   return {
     ...currentSkill,
     mastery: newMastery,
     totalAttempts: currentSkill.totalAttempts + 1,
     correctAttempts: currentSkill.correctAttempts + (isCorrect ? 1 : 0),
     lastPracticed: attempt.date,
+    nextReviewDate: nextReview,
     recentLatencyMs: newLatency,
     errorHistory: newErrors,
   };
 }
 
 /**
- * Computes readiness assessment for a specific exam category.
+ * Computes heuristic readiness assessment for a specific exam category.
  */
 export function calculateExamReadiness(skills: SkillItem[], category: ExamCategory): ExamReadiness {
   const categorySkills = skills.filter(s => s.category === category);
@@ -83,7 +86,7 @@ export function calculateExamReadiness(skills: SkillItem[], category: ExamCatego
     return {
       category,
       masteryPercentage: 0,
-      readinessLabel: 'LOW',
+      readinessLabel: 'DEVELOPING',
       passingProbability: 25,
       weakestTopics: [],
       strongestTopics: [],
@@ -96,12 +99,11 @@ export function calculateExamReadiness(skills: SkillItem[], category: ExamCatego
   const strongestTopics = sorted.slice(0, 3).map(s => s.topic);
   const weakestTopics = sorted.slice(-3).reverse().map(s => s.topic);
 
-  let readinessLabel: 'LOW' | 'MODERATE' | 'HIGH' | 'EXAM READY' = 'LOW';
+  let readinessLabel: 'DEVELOPING' | 'SECURE' | 'EXAM READY' = 'DEVELOPING';
   if (avgMastery >= 85) readinessLabel = 'EXAM READY';
-  else if (avgMastery >= 70) readinessLabel = 'HIGH';
-  else if (avgMastery >= 50) readinessLabel = 'MODERATE';
+  else if (avgMastery >= 70) readinessLabel = 'SECURE';
 
-  // Passing probability formula based on average mastery and consistency
+  // Heuristic probability estimate
   const passingProbability = Math.min(99, Math.max(10, Math.round(avgMastery * 0.95 + 5)));
 
   return {

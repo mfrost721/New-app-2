@@ -23,6 +23,7 @@ export function freqToMidi(freq: number): { midi: number; noteName: string; cent
 
 /**
  * Standard McLeod / Auto-Correlation pitch detection algorithm for raw audio buffer.
+ * Zero per-frame array allocations using subarray.
  */
 export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAnalysisResult | null {
   if (!buffer || buffer.length === 0 || !sampleRate || sampleRate <= 0) {
@@ -59,32 +60,43 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
     }
   }
 
-  const buf = r2 > r1 ? buffer.slice(r1, r2) : buffer;
+  // Use subarray to eliminate memory allocations without mutating source buffer
+  const buf = r2 > r1 ? buffer.subarray(r1, r2) : buffer;
   const newSize = buf.length;
   if (newSize < 32) return null;
 
-  const c = new Float32Array(newSize);
-  for (let i = 0; i < newSize; i++) {
+  // Max lag for minimum audible frequency 50Hz is sampleRate / 50
+  const maxLag = Math.min(newSize, Math.ceil(sampleRate / 50));
+  const c = new Float32Array(maxLag);
+
+  for (let i = 0; i < maxLag; i++) {
+    let sum = 0;
     for (let j = 0; j < newSize - i; j++) {
-      c[i] += buf[j] * buf[j + i];
+      sum += buf[j] * buf[j + i];
     }
+    c[i] = sum;
   }
 
   let d = 0;
-  while (d < newSize - 1 && c[d] > c[d + 1]) {
+  while (d < maxLag - 1 && c[d] > c[d + 1]) {
     d++;
   }
 
   let maxval = -1;
   let maxpos = -1;
-  for (let i = d; i < newSize; i++) {
+  for (let i = d; i < maxLag; i++) {
     if (c[i] > maxval) {
       maxval = c[i];
       maxpos = i;
     }
   }
 
-  if (maxpos <= 0 || maxpos >= newSize - 1 || maxval <= 0) {
+  if (maxpos <= 0 || maxpos >= maxLag - 1 || maxval <= 0) {
+    return null;
+  }
+
+  // Reject noise / unpitched signals with low clarity (peak < 40% of zero lag energy)
+  if (c[0] <= 0 || maxval / c[0] < 0.4) {
     return null;
   }
 
@@ -105,7 +117,6 @@ export function autoCorrelate(buffer: Float32Array, sampleRate: number): PitchAn
   if (isNaN(freq) || !isFinite(freq) || freq < 50 || freq > 2000) return null;
 
   const { midi, noteName, cents } = freqToMidi(freq);
-
   const clarity = c[0] > 0 ? Math.min(1, Math.max(0, Math.round((maxval / c[0]) * 100) / 100)) : 0;
 
   return {

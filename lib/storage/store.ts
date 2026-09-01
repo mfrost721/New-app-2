@@ -1,10 +1,9 @@
 /**
  * LocalStorage State Store & Persistence Layer
- * Manages user state, skills mastery, practice logs, streaks, and settings.
+ * Manages user state, skills mastery, practice logs, streaks, schema migration, and reactive event dispatching.
  */
 
-import { SkillItem, PracticeAttempt, updateSkillMastery, calculateExamReadiness, ExamReadiness } from '../adaptive/mastery';
-import { generatePracticePrescription, SessionPrescription } from '../adaptive/practicePrescription';
+import { SkillItem, PracticeAttempt, updateSkillMastery } from '../adaptive/mastery';
 
 export interface UserStoreState {
   examDate: string; // ISO date format, default 2026-12-08
@@ -19,6 +18,7 @@ export interface UserStoreState {
 }
 
 const STORAGE_KEY = 'frost_music_lab_user_store_v1';
+export const STORE_UPDATE_EVENT = 'frost-store-update';
 
 export const INITIAL_SKILLS: SkillItem[] = [
   // Theory IV
@@ -53,12 +53,50 @@ export const INITIAL_STATE: UserStoreState = {
   isRoadMode: false,
   academicStreak: 5,
   pianoStreak: 3,
-  lastAcademicDate: new Date().toISOString().split('T')[0],
-  lastPianoDate: new Date().toISOString().split('T')[0],
+  lastAcademicDate: new Date().toLocaleDateString('en-CA'),
+  lastPianoDate: new Date().toLocaleDateString('en-CA'),
   totalMinutesStudied: 340,
   skills: INITIAL_SKILLS,
   history: [],
 };
+
+/**
+ * Validates and migrates raw JSON into a guaranteed valid UserStoreState.
+ */
+export function validateAndMigrateStore(parsed: unknown): UserStoreState {
+  if (!parsed || typeof parsed !== 'object') return INITIAL_STATE;
+  const raw = parsed as Partial<UserStoreState>;
+
+  const examDate = typeof raw.examDate === 'string' ? raw.examDate : INITIAL_STATE.examDate;
+  const isRoadMode = typeof raw.isRoadMode === 'boolean' ? raw.isRoadMode : false;
+  const academicStreak = typeof raw.academicStreak === 'number' ? raw.academicStreak : 0;
+  const pianoStreak = typeof raw.pianoStreak === 'number' ? raw.pianoStreak : 0;
+  const lastAcademicDate = typeof raw.lastAcademicDate === 'string' ? raw.lastAcademicDate : null;
+  const lastPianoDate = typeof raw.lastPianoDate === 'string' ? raw.lastPianoDate : null;
+  const totalMinutesStudied = typeof raw.totalMinutesStudied === 'number' ? raw.totalMinutesStudied : 0;
+
+  let skills = Array.isArray(raw.skills) ? (raw.skills as SkillItem[]) : INITIAL_SKILLS;
+  // Ensure missing initial skills are populated
+  for (const initSkill of INITIAL_SKILLS) {
+    if (!skills.some(s => s.id === initSkill.id)) {
+      skills.push(initSkill);
+    }
+  }
+
+  const history = Array.isArray(raw.history) ? (raw.history as PracticeAttempt[]) : [];
+
+  return {
+    examDate,
+    isRoadMode,
+    academicStreak,
+    pianoStreak,
+    lastAcademicDate,
+    lastPianoDate,
+    totalMinutesStudied,
+    skills,
+    history,
+  };
+}
 
 export function loadUserStore(): UserStoreState {
   if (typeof window === 'undefined') return INITIAL_STATE;
@@ -66,7 +104,7 @@ export function loadUserStore(): UserStoreState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return INITIAL_STATE;
     const parsed = JSON.parse(raw);
-    return { ...INITIAL_STATE, ...parsed };
+    return validateAndMigrateStore(parsed);
   } catch {
     return INITIAL_STATE;
   }
@@ -76,15 +114,21 @@ export function saveUserStore(state: UserStoreState): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.dispatchEvent(new CustomEvent(STORE_UPDATE_EVENT, { detail: state }));
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
 }
 
+export function getLocalCalendarDate(dateObj = new Date()): string {
+  // YYYY-MM-DD in local time zone
+  return dateObj.toLocaleDateString('en-CA');
+}
+
 export function recordPracticeAttemptInStore(
   currentState: UserStoreState,
   attempt: PracticeAttempt,
-  durationMinutes: number = 2
+  durationMinutes = 2
 ): UserStoreState {
   const targetSkill = currentState.skills.find(s => s.id === attempt.skillId);
   if (!targetSkill) return currentState;
@@ -93,14 +137,14 @@ export function recordPracticeAttemptInStore(
   const newSkills = currentState.skills.map(s => (s.id === attempt.skillId ? updatedSkill : s));
   const newHistory = [attempt, ...currentState.history.slice(0, 99)];
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalCalendarDate(new Date(attempt.date));
   let academicStreak = currentState.academicStreak;
   let pianoStreak = currentState.pianoStreak;
 
   const getDaysDiff = (dateStr: string | null) => {
     if (!dateStr) return null;
-    const past = new Date(dateStr).getTime();
-    const curr = new Date(today).getTime();
+    const past = new Date(dateStr + 'T00:00:00').getTime();
+    const curr = new Date(today + 'T00:00:00').getTime();
     return Math.floor((curr - past) / (1000 * 60 * 60 * 24));
   };
 
