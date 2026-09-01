@@ -64,15 +64,14 @@ const SOLFEGE_FLAT = ['Do', 'Ra', 'Re', 'Me', 'Mi', 'Fa', 'Se', 'Sol', 'Le', 'La
 const SCALE_DEGREES_SHARP = ['1', '♯1', '2', '♯2', '3', '4', '♯4', '5', '♯5', '6', '♯6', '7'];
 const SCALE_DEGREES_FLAT = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
 
-let scratchBuffer = new Float32Array(2048);
+let scratchBuf = new Float32Array(2048);
+let nsdfBuf = new Float32Array(2048);
 
-function getScratchBuffer(size: number): Float32Array {
-  if (scratchBuffer.length < size) {
-    scratchBuffer = new Float32Array(size);
-  } else {
-    scratchBuffer.fill(0, 0, size);
+function ensureScratchCapacity(size: number): void {
+  if (scratchBuf.length < size) {
+    scratchBuf = new Float32Array(size);
+    nsdfBuf = new Float32Array(size);
   }
-  return scratchBuffer;
 }
 
 /**
@@ -141,7 +140,8 @@ export function freqToMidi(freq: number, preferFlat = false, keyTonicPc = 0): Ex
 }
 
 /**
- * Standard McLeod / Auto-Correlation pitch detection algorithm for raw audio buffer.
+ * McLeod Pitch Method (MPM) / Normalized Square Difference Function (NSDF)
+ * pitch detection algorithm for raw audio buffer.
  */
 export function autoCorrelate(
   buffer: Float32Array,
@@ -155,88 +155,122 @@ export function autoCorrelate(
   const preferFlat = options.preferFlat ?? false;
   const keyTonicPc = options.keyTonicPc ?? 0;
 
-  if (!buffer || buffer.length === 0 || !sampleRate || sampleRate <= 0) {
+  if (!buffer || buffer.length < 64 || !sampleRate || sampleRate <= 0) {
     return null;
   }
 
   const SIZE = buffer.length;
-  if (SIZE < 64) return null;
 
-  let rms = 0;
+  // 1. Calculate Mean and RMS (DC offset removal)
+  let sum = 0;
+  let sumSq = 0;
   for (let i = 0; i < SIZE; i++) {
     const val = buffer[i];
-    rms += val * val;
+    sum += val;
+    sumSq += val * val;
   }
-  rms = Math.sqrt(rms / SIZE);
+  const mean = sum / SIZE;
+  const rms = Math.sqrt(Math.max(0, sumSq / SIZE - mean * mean));
 
   // Signal too quiet
   if (rms < minRms) return null;
 
-  let r1 = 0;
-  let r2 = SIZE - 1;
-  const thres = 0.2;
-
-  for (let i = 0; i < Math.floor(SIZE / 2); i++) {
-    if (Math.abs(buffer[i]) < thres) {
-      r1 = i;
-      break;
-    }
-  }
-  for (let i = 1; i < Math.floor(SIZE / 2); i++) {
-    if (Math.abs(buffer[SIZE - i]) < thres) {
-      r2 = SIZE - i;
-      break;
-    }
+  // 2. Prepare zero-mean buffer in reusable scratch space
+  ensureScratchCapacity(SIZE);
+  for (let i = 0; i < SIZE; i++) {
+    scratchBuf[i] = buffer[i] - mean;
   }
 
-  const buf = r2 > r1 ? buffer.subarray(r1, r2) : buffer;
-  const newSize = buf.length;
-  if (newSize < 32) return null;
+  // 3. Determine lag bounds
+  const minLag = Math.max(1, Math.floor(sampleRate / maxFreq));
+  const maxLag = Math.min(SIZE - 2, Math.ceil(sampleRate / minFreq));
 
-  const c = getScratchBuffer(newSize);
-  for (let i = 0; i < newSize; i++) {
-    for (let j = 0; j < newSize - i; j++) {
-      c[i] += buf[j] * buf[j + i];
-    }
-  }
-
-  if (newSize < 3) return null;
-
-  let d = 0;
-  while (d < newSize - 1 && c[d] > c[d + 1]) {
-    d++;
-  }
-
-  let maxval = -1;
-  let maxpos = -1;
-  for (let i = d; i < newSize; i++) {
-    if (c[i] > maxval) {
-      maxval = c[i];
-      maxpos = i;
-    }
-  }
-
-  if (maxpos <= 0 || maxpos >= newSize - 1 || maxval <= 0) {
+  if (maxLag <= minLag || maxLag >= SIZE - 1) {
     return null;
   }
 
-  let T0 = maxpos;
-  const x1 = c[T0 - 1];
-  const x2 = c[T0];
-  const x3 = c[T0 + 1];
+  // 4. Compute Normalized Square Difference Function (NSDF) / Normalized Autocorrelation
+  let sumSqZeroMean = 0;
+  for (let i = 0; i < SIZE; i++) {
+    sumSqZeroMean += scratchBuf[i] * scratchBuf[i];
+  }
+  if (sumSqZeroMean <= 0) return null;
 
-  const a = (x1 + x3 - 2 * x2) / 2;
-  const b = (x3 - x1) / 2;
-  if (a !== 0) {
-    T0 = T0 - b / (2 * a);
+  let mk = 2 * sumSqZeroMean;
+  nsdfBuf[0] = 1.0;
+
+  for (let lag = 1; lag <= maxLag + 1; lag++) {
+    let r = 0;
+    const limit = SIZE - lag;
+    for (let j = 0; j < limit; j++) {
+      r += scratchBuf[j] * scratchBuf[j + lag];
+    }
+    mk -= scratchBuf[lag - 1] * scratchBuf[lag - 1] + scratchBuf[SIZE - lag] * scratchBuf[SIZE - lag];
+    if (mk > 0) {
+      nsdfBuf[lag] = Math.min(1.0, Math.max(-1.0, (2 * r) / mk));
+    } else {
+      nsdfBuf[lag] = 0;
+    }
   }
 
-  if (!T0 || T0 <= 0) return null;
+  // 5. Find peak candidates after first zero-crossing
+  let pos = 0;
+  while (pos <= maxLag && nsdfBuf[pos] > 0) {
+    pos++;
+  }
+  while (pos <= maxLag && nsdfBuf[pos] <= 0) {
+    pos++;
+  }
+
+  if (pos > maxLag) {
+    return null;
+  }
+
+  const peaks: { lag: number; val: number }[] = [];
+  let maxVal = -1;
+
+  for (let i = Math.max(pos, minLag); i <= maxLag; i++) {
+    if (nsdfBuf[i] > 0 && nsdfBuf[i] >= nsdfBuf[i - 1] && nsdfBuf[i] >= nsdfBuf[i + 1]) {
+      peaks.push({ lag: i, val: nsdfBuf[i] });
+      if (nsdfBuf[i] > maxVal) {
+        maxVal = nsdfBuf[i];
+      }
+    }
+  }
+
+  if (peaks.length === 0 || maxVal <= 0) {
+    return null;
+  }
+
+  // Pick first peak exceeding 85% of global max peak (prevents octave errors)
+  const threshold = 0.85 * maxVal;
+  let selectedPeak = peaks.find(p => p.val >= threshold);
+  if (!selectedPeak) {
+    selectedPeak = peaks[0];
+  }
+
+  const T0_idx = selectedPeak.lag;
+
+  // 6. Parabolic interpolation for sub-sample lag estimate
+  const y1 = nsdfBuf[T0_idx - 1];
+  const y2 = nsdfBuf[T0_idx];
+  const y3 = nsdfBuf[T0_idx + 1];
+
+  let T0 = T0_idx;
+  const denominator = 2 * (2 * y2 - y1 - y3);
+  if (denominator !== 0) {
+    const delta = (y3 - y1) / denominator;
+    if (Math.abs(delta) < 1) {
+      T0 += delta;
+    }
+  }
+
+  if (T0 <= 0) return null;
 
   const freq = sampleRate / T0;
   if (isNaN(freq) || !isFinite(freq) || freq < minFreq || freq > maxFreq) return null;
 
-  const clarity = c[0] > 0 ? Math.min(1, Math.max(0, maxval / c[0])) : 0;
+  const clarity = y2;
   if (clarity < clarityThreshold) return null;
 
   const info = freqToMidi(freq, preferFlat, keyTonicPc);
