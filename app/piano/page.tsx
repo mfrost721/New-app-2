@@ -90,14 +90,6 @@ export default function PianoPage() {
     setStatusMessage(null);
   };
 
-  const handleSelectLevel = (level: PianoLevel) => {
-    setSelectedLevel(level);
-    const defaultExercise = getPianoExercisesByLevel(level)[0];
-    if (defaultExercise) {
-      handleSelectExercise(defaultExercise.id);
-    }
-  };
-
   // Keyboard note press handler
   const handleNoteClick = (midi: number) => {
     const event: PlayedNoteEvent = {
@@ -142,25 +134,9 @@ export default function PianoPage() {
   // Audio Microphone Stream Control
   const toggleMicListening = async () => {
     if (isMicListening) {
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = null;
-      }
-      if (micStreamRef.current) {
-        micStreamRef.current.getTracks().forEach(t => t.stop());
-        micStreamRef.current = null;
-      }
-      if (audioContextRef.current) {
-        try {
-          await audioContextRef.current.close();
-        } catch {
-          // no-op
-        }
-        audioContextRef.current = null;
-      }
-      analyserRef.current = null;
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (micStreamRef.current) micStreamRef.current.getTracks().forEach(t => t.stop());
       setIsMicListening(false);
-      setInputMode('MIDI');
       return;
     }
 
@@ -206,12 +182,6 @@ export default function PianoPage() {
   // Record practice attempt in state store
   const handleCommitAttempt = (score: number, isPassed: boolean, method: string) => {
     if (!userStore || !currentExercise) return;
-    const trackedSkill = userStore.skills.find(s => s.id === currentExercise.id);
-    if (!trackedSkill) {
-      setStatusMessage('Attempt not saved: this exercise is not tracked in progress yet.');
-      setTimeout(() => setStatusMessage(null), 4000);
-      return;
-    }
 
     const updated = recordPracticeAttemptInStore(userStore, {
       skillId: currentExercise.id,
@@ -257,7 +227,7 @@ export default function PianoPage() {
         {/* Level Switcher */}
         <div className="flex space-x-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
           <button
-            onClick={() => handleSelectLevel('Class Piano III')}
+            onClick={() => setSelectedLevel('Class Piano III')}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
               selectedLevel === 'Class Piano III' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'
             }`}
@@ -265,7 +235,7 @@ export default function PianoPage() {
             Class Piano III Curriculum
           </button>
           <button
-            onClick={() => handleSelectLevel('Class Piano IV')}
+            onClick={() => setSelectedLevel('Class Piano IV')}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
               selectedLevel === 'Class Piano IV' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'
             }`}
@@ -306,7 +276,7 @@ export default function PianoPage() {
                   selectedCategory === cat ? 'bg-slate-700 text-amber-300 border border-slate-600' : 'text-slate-400 hover:text-slate-200 bg-slate-950/50'
                 }`}
               >
-                {cat === 'all' ? 'All' : cat.replace(/_/g, ' ')}
+                {cat === 'all' ? 'All' : cat.replace('_', ' ')}
               </button>
             ))}
           </div>
@@ -335,7 +305,7 @@ export default function PianoPage() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center mt-2 text-[10px] text-slate-400">
-                    <span className="capitalize">{ex.category.replace(/_/g, ' ')}</span>
+                    <span className="capitalize">{ex.category.replace('_', ' ')}</span>
                     <span className={`font-mono font-bold ${mastery >= 80 ? 'text-emerald-400' : mastery >= 60 ? 'text-amber-400' : 'text-slate-500'}`}>
                       Mastery: {mastery}%
                     </span>
@@ -355,9 +325,8 @@ export default function PianoPage() {
               <select
                 value={customKey}
                 onChange={e => {
-                  const nextKey = e.target.value;
-                  setCustomKey(nextKey);
-                  handleSelectExercise(`dynamic_${nextKey}_${customScaleType}`);
+                  setCustomKey(e.target.value);
+                  setSelectedExerciseId(`dynamic_${e.target.value}_${customScaleType}`);
                 }}
                 className="bg-slate-900 border border-slate-700 text-slate-200 rounded px-2 py-1"
               >
@@ -368,9 +337,8 @@ export default function PianoPage() {
               <select
                 value={customScaleType}
                 onChange={e => {
-                  const nextScaleType = e.target.value as typeof customScaleType;
-                  setCustomScaleType(nextScaleType);
-                  handleSelectExercise(`dynamic_${customKey}_${nextScaleType}`);
+                  setCustomScaleType(e.target.value as unknown as 'Major');
+                  setSelectedExerciseId(`dynamic_${customKey}_${e.target.value}`);
                 }}
                 className="bg-slate-900 border border-slate-700 text-slate-200 rounded px-2 py-1"
               >
