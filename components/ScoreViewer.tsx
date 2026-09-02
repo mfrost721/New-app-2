@@ -67,7 +67,7 @@ export default function ScoreViewer({
               type="button"
               onClick={() => onNoteClick && onNoteClick(idx)}
               aria-label={`Note ${n.accidental ? `${n.accidental}${n.pitch}` : n.pitch}, ${n.duration}${n.annotation ? `, annotation ${n.annotation}` : ''}`}
-              className="relative flex flex-col items-center cursor-pointer group hover:scale-105 transition-transform"
+              className="relative flex flex-col items-center cursor-pointer group hover:scale-105 transition-transform p-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:z-20"
             >
               {/* Optional Annotation Badge */}
               {n.annotation && (
