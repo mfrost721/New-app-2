@@ -33,6 +33,14 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans">
+      {/* Skip to Content Link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-amber-400 focus:text-slate-950 focus:font-bold focus:rounded-lg focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-amber-300"
+      >
+        Skip to main content
+      </a>
+
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
@@ -66,7 +74,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       {/* Main Body */}
       <div className="flex-1 flex flex-col md:flex-row">
         {/* Desktop Sidebar / Mobile Nav Bar */}
-        <nav className="w-full md:w-64 bg-slate-900 border-r border-slate-800 p-4 shrink-0">
+        <nav aria-label="Main Navigation" className="w-full md:w-64 bg-slate-900 border-r border-slate-800 p-4 shrink-0">
           <div className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto pb-2 md:pb-0">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -104,7 +112,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         </nav>
 
         {/* Content Area */}
-        <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
+        <main id="main-content" tabIndex={-1} className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full focus:outline-none">
           {children}
         </main>
       </div>
