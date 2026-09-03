@@ -1,8 +1,34 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import LayoutWrapper from '../components/LayoutWrapper';
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+}));
 
 describe('PWA & Accessibility Verification', () => {
+  it('renders skip to main content link and main landmark target in LayoutWrapper', () => {
+    render(
+      <LayoutWrapper>
+        <div>Test Page Content</div>
+      </LayoutWrapper>
+    );
+
+    const skipLink = screen.getByRole('link', { name: /Skip to main content/i });
+    expect(skipLink).toBeDefined();
+    expect(skipLink.getAttribute('href')).toBe('#main-content');
+
+    const mainElement = screen.getByRole('main');
+    expect(mainElement.getAttribute('id')).toBe('main-content');
+    expect(mainElement.getAttribute('tabindex')).toBe('-1');
+
+    const navElement = screen.getByRole('navigation', { name: /Main Navigation/i });
+    expect(navElement).toBeDefined();
+  });
+
   it('has a valid manifest.json with standalone display and theme color', () => {
     const manifestPath = path.join(process.cwd(), 'public', 'manifest.json');
     expect(fs.existsSync(manifestPath)).toBe(true);
