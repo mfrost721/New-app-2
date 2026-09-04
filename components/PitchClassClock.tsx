@@ -32,7 +32,13 @@ export default function PitchClassClock({
 
   return (
     <div className="flex flex-col items-center justify-center p-4 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
-      <svg width={300} height={300} className="select-none">
+      <svg
+        width={300}
+        height={300}
+        role="img"
+        aria-label="Interactive Pitch-Class Clock Visualizer"
+        className="select-none overflow-visible"
+      >
         {/* Background track circle */}
         <circle
           cx={center}
