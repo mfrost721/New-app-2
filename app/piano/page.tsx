@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { SkillItem } from '@/lib/adaptive/mastery';
 import KeyboardVisualizer from '@/components/KeyboardVisualizer';
 import ScoreViewer from '@/components/ScoreViewer';
 import { recordPracticeAttemptInStore, loadUserStore, UserStoreState } from '@/lib/storage/store';
@@ -63,6 +64,12 @@ export default function PianoPage() {
   useEffect(() => {
     setUserStore(loadUserStore());
   }, []);
+
+  const skills = userStore?.skills;
+  const skillsById = useMemo(() => {
+    if (!skills) return new Map<string, SkillItem>();
+    return new Map(skills.map(s => [s.id, s]));
+  }, [skills]);
 
   // Filter exercises
   let currentExercise: PianoExercise | undefined;
@@ -208,7 +215,7 @@ export default function PianoPage() {
     setRubricResult(res);
   };
 
-  const skillItem = userStore?.skills.find(s => s.id === currentExercise?.id);
+  const skillItem = currentExercise ? skillsById.get(currentExercise.id) : undefined;
 
   return (
     <div className="space-y-6 pb-12">
@@ -285,7 +292,7 @@ export default function PianoPage() {
           <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
             {filteredExercises.map(ex => {
               const isSelected = ex.id === selectedExerciseId;
-              const skill = userStore?.skills.find(s => s.id === ex.id);
+              const skill = skillsById.get(ex.id);
               const mastery = skill ? skill.mastery : 0;
 
               return (
