@@ -17,7 +17,7 @@ import {
 } from '../lib/music/twelveTone';
 
 import { buildScale, identifyScale } from '../lib/music/scalesAndModes';
-import { spellChord, generateSecondaryDominant, classifyNonHarmonicTone } from '../lib/music/chordsAndHarmony';
+import { spellChord, generateSecondaryDominant, classifyNonHarmonicTone, getIntervalSemitones } from '../lib/music/chordsAndHarmony';
 import { getRhythmicSyllable } from '../lib/music/rhythm';
 
 describe('Pitch Class Set Theory Engine', () => {
@@ -152,6 +152,26 @@ describe('Chords and Harmony Engine', () => {
     expect(classifyNonHarmonicTone('step up', 'step up', false)).toBe('passing tone');
     expect(classifyNonHarmonicTone('step up', 'step down', false)).toBe('neighbor tone');
     expect(classifyNonHarmonicTone('same', 'step down', true)).toBe('suspension');
+  });
+
+  it('calculates semitones between two notes with getIntervalSemitones', () => {
+    // Basic unison & ascending intervals
+    expect(getIntervalSemitones('C', 'C')).toBe(0);
+    expect(getIntervalSemitones('C', 'E')).toBe(4);
+    expect(getIntervalSemitones('C', 'G')).toBe(7);
+
+    // Directional wrapped semitone calculations (mod 12)
+    expect(getIntervalSemitones('G', 'C')).toBe(5);
+    expect(getIntervalSemitones('B', 'C')).toBe(1);
+
+    // Notes with accidentals (# and b) and octaves
+    expect(getIntervalSemitones('C4', 'F#4')).toBe(6);
+    expect(getIntervalSemitones('Db3', 'A#3')).toBe(9);
+    expect(getIntervalSemitones('Eb', 'F#')).toBe(3);
+
+    // Invalid note input handling
+    expect(() => getIntervalSemitones('InvalidNote', 'C')).toThrow();
+    expect(() => getIntervalSemitones('C', 'X#')).toThrow();
   });
 });
 
