@@ -60,6 +60,22 @@ describe('Drill Engine & Question Generator', () => {
     expect(res.explanation).toContain('Incorrect');
     expect(res.explanation).toContain(q.correctAnswer);
   });
+
+  it('throws an error when an unknown category is provided to generateDrillQuestion', () => {
+    // @ts-expect-error test runtime invalid category
+    expect(() => generateDrillQuestion('invalidCategory', 1, 100)).toThrow('Unknown category: invalidCategory');
+  });
+
+  it('handles unparseable or malformed user input in checkEnharmonicMatch gracefully', () => {
+    const pitchClassQ = generateDrillQuestion('setTheory', 1, 777);
+    pitchClassQ.spellingSensitive = false;
+    pitchClassQ.correctAnswer = '0, 4, 7';
+
+    // Passing unparseable input (e.g. invalid note name string) triggers catch block in checkEnharmonicMatch
+    const unparseableRes = validateDrillAnswer(pitchClassQ, 'INVALID_NOTE_STRING');
+    expect(unparseableRes.isCorrect).toBe(false);
+    expect(unparseableRes.enharmonicCorrect).toBe(false);
+  });
 });
 
 describe('Z-Related Pitch-Class Sets', () => {

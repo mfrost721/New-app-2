@@ -41,6 +41,11 @@ describe('Rhythm & Meter Engine Unit Tests', () => {
     expect(isSyncopated(2)).toBe(false); // Off-beat main
     expect(isSyncopated(3)).toBe(true);  // Off-beat sub
   });
+
+  it('falls back to string beat number when an unsupported counting system is provided', () => {
+    // @ts-expect-error test runtime invalid counting system
+    expect(getRhythmicSyllable(3, 1, 'UnknownSystem')).toBe('3');
+  });
 });
 
 describe('Grading & Adaptive Mastery Calculations', () => {

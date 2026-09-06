@@ -11,8 +11,9 @@ import {
   identifyRowTransformation,
   isValidTwelveToneRow,
 } from '../lib/music/twelveTone';
-import { buildScale } from '../lib/music/scalesAndModes';
+import { buildScale, identifyScale } from '../lib/music/scalesAndModes';
 import { spellChord, classifyNonHarmonicTone } from '../lib/music/chordsAndHarmony';
+import { evaluateMidiSequence } from '../lib/music/pianoGrading';
 
 describe('Pitch Class & Set Theory Edge Cases', () => {
   it('handles octave numbers and strange note casing in noteToPitchClass', () => {
@@ -76,6 +77,12 @@ describe('Twelve-Tone Transformations Edge Cases', () => {
     expect(idRI?.form).toBe('RI');
     expect(idRI?.index).toBe(3);
   });
+
+  it('returns null when identifyRowTransformation cannot find a matching transformation', () => {
+    // [0, 0, 0] cannot match any 12-tone permutation
+    const unmatchable = identifyRowTransformation(p0, [0, 0, 0]);
+    expect(unmatchable).toBeNull();
+  });
 });
 
 describe('Scales, Modes, & Chords Edge Cases', () => {
@@ -115,5 +122,20 @@ describe('Scales, Modes, & Chords Edge Cases', () => {
     expect(classifyNonHarmonicTone('step up', 'leap down', false)).toBe('escape tone');
     expect(classifyNonHarmonicTone('same', 'step down', false)).toBe('anticipation');
     expect(classifyNonHarmonicTone('same', 'step down', true)).toBe('suspension');
+  });
+
+  it('returns null from identifyScale when pitch classes do not match any scale or mode', () => {
+    // Chromatic cluster [0, 1, 2, 3] does not match any pentatonic/diatonic/symmetrical scale definition
+    expect(identifyScale([0, 1, 2, 3])).toBeNull();
+    // Empty array
+    expect(identifyScale([])).toBeNull();
+  });
+
+  it('handles empty target notes array in evaluateMidiSequence gracefully', () => {
+    const result = evaluateMidiSequence([], []);
+    expect(result.score).toBe(100);
+    expect(result.passed).toBe(true);
+    expect(result.totalTargetNotes).toBe(0);
+    expect(result.feedbackMessages).toContain('No target notes specified.');
   });
 });
