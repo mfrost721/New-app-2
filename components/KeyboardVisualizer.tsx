@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { pitchClassToNote } from '@/lib/music/pitchClass';
 import { soundEngine } from '@/lib/audio/soundEngine';
 import { midiController } from '@/lib/audio/midi';
@@ -29,6 +29,10 @@ const DEGREE_MAP: Record<number, string> = {
 const WHITE_KEY_OFFSETS: Record<number, number> = {
   0: 0, 1: 1, 2: 1, 3: 2, 4: 2, 5: 3, 6: 4, 7: 4, 8: 5, 9: 5, 10: 6, 11: 6,
 };
+
+// Hoisted O(1) boolean lookup for black keys (pitch classes 1, 3, 6, 8, 10)
+// to eliminate array allocation and linear search on every key render frame.
+const IS_BLACK_KEY = [false, true, false, true, false, false, true, false, true, false, true, false];
 
 const getWhiteKeyIndex = (midi: number) => {
   const octave = Math.floor(midi / 12);
@@ -67,21 +71,26 @@ function KeyboardVisualizer({
     return cleanup;
   }, []);
 
-  const keys = Array.from({ length: numKeys }, (_, i) => startMidi + i);
+  // Performance Optimization:
+  // 1. Memoize key MIDI array to avoid recreating Array.from on every state/prop render.
+  // 2. Precompute Sets for activeMidis and pressedMidis for O(1) membership checks (replacing O(N) .includes).
+  // 3. Precompute startWhiteKeyIndex outside the key loop to avoid redundant getWhiteKeyIndex calls.
+  const keys = useMemo(
+    () => Array.from({ length: numKeys }, (_, i) => startMidi + i),
+    [startMidi, numKeys]
+  );
 
-  const getLabel = (midi: number) => {
-    const pc = ((midi % 12) + 12) % 12;
+  const activeMidisSet = useMemo(() => new Set(activeMidis), [activeMidis]);
+  const pressedMidisSet = useMemo(() => new Set(pressedMidis), [pressedMidis]);
+  const startWhiteKeyIndex = useMemo(() => getWhiteKeyIndex(startMidi), [startMidi]);
+
+  const getLabel = (pc: number) => {
     switch (labelMode) {
       case 'note': return pitchClassToNote(pc);
       case 'pitchClass': return `${pc}`;
       case 'solfege': return SOLFEGE_MAP[pc] || '';
       case 'scaleDegree': return DEGREE_MAP[pc] || '';
     }
-  };
-
-  const isBlackKey = (midi: number) => {
-    const pc = ((midi % 12) + 12) % 12;
-    return [1, 3, 6, 8, 10].includes(pc);
   };
 
   const handleKeyClick = (midi: number) => {
@@ -94,16 +103,17 @@ function KeyboardVisualizer({
     <div className="w-full overflow-x-auto pb-2 select-none">
       <div className="relative flex min-w-max h-36 bg-slate-900 p-2 rounded-xl shadow-inner border border-slate-800">
         {keys.map((midi) => {
-          const isBlack = isBlackKey(midi);
-          const isActive = activeMidis.includes(midi) || pressedMidis.includes(midi);
+          const pc = ((midi % 12) + 12) % 12;
+          const isBlack = IS_BLACK_KEY[pc];
+          const isActive = activeMidisSet.has(midi) || pressedMidisSet.has(midi);
 
-          const noteName = pitchClassToNote(((midi % 12) + 12) % 12);
+          const noteName = pitchClassToNote(pc);
           const octave = Math.floor(midi / 12) - 1;
           const fullNoteLabel = `${noteName}${octave}`;
           const keyAriaLabel = `Piano key ${fullNoteLabel} (MIDI ${midi})`;
 
           if (isBlack) {
-            const whiteKeyOffset = getWhiteKeyIndex(midi) - getWhiteKeyIndex(startMidi);
+            const whiteKeyOffset = getWhiteKeyIndex(midi) - startWhiteKeyIndex;
             return (
               <button
                 key={midi}
@@ -120,7 +130,7 @@ function KeyboardVisualizer({
                   left: `${whiteKeyOffset * 2.25 + 0.5}rem`
                 }}
               >
-                {getLabel(midi)}
+                {getLabel(pc)}
               </button>
             );
           }
@@ -138,7 +148,7 @@ function KeyboardVisualizer({
                   : 'bg-slate-100 text-slate-800 hover:bg-white active:bg-slate-200'
               }`}
             >
-              {getLabel(midi)}
+              {getLabel(pc)}
             </button>
           );
         })}
