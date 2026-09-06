@@ -16,8 +16,14 @@ export interface RowTransformation {
  */
 export function isValidTwelveToneRow(row: number[]): boolean {
   if (row.length !== 12) return false;
-  const unique = new Set(row.map(n => ((n % 12) + 12) % 12));
-  return unique.size === 12;
+  let seen = 0;
+  for (let i = 0; i < 12; i++) {
+    const pc = ((row[i] % 12) + 12) % 12;
+    const bit = 1 << pc;
+    if ((seen & bit) !== 0) return false;
+    seen |= bit;
+  }
+  return true;
 }
 
 /**
