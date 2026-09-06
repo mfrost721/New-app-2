@@ -160,7 +160,11 @@ export function buildScale(tonicNote: string, modeName: ModeName): { pitchClasse
  * Identifies scale tonic and mode given a set of pitch classes.
  */
 export function identifyScale(pcs: number[], expectedTonic?: number): { tonic: number; tonicNote: string; mode: ModeName } | null {
-  const uniquePcs = Array.from(new Set(pcs.map(p => ((p % 12) + 12) % 12))).sort((a, b) => a - b);
+  const set = new Set<number>();
+  for (const p of pcs) {
+    set.add(((p % 12) + 12) % 12);
+  }
+  const uniquePcs = Array.from(set).sort((a, b) => a - b);
 
   const tonicsToTry = expectedTonic !== undefined
     ? [expectedTonic, ...Array.from({ length: 12 }, (_, i) => i).filter(i => i !== expectedTonic)]
