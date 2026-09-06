@@ -96,7 +96,7 @@ describe('Scales, Modes, & Chords Edge Cases', () => {
 
   it('throws error when building scale with invalid mode name', () => {
     // @ts-expect-error test runtime invalid mode
-    expect(() => buildScale('C', 'NonExistentMode')).toThrow('Unknown mode');
+    expect(() => buildScale('C', 'NonExistentMode')).toThrow('Unknown mode: NonExistentMode');
   });
 
   it('spells 2nd and 3rd inversions for 7th chords', () => {
