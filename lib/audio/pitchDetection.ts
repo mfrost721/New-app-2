@@ -211,13 +211,13 @@ export function autoCorrelate(
   if (newSize < 3) return null;
 
   let d = 0;
-  while (d < maxLag - 1 && c[d] > c[d + 1]) {
+  while (d < maxLag - 2 && c[d] > c[d + 1]) {
     d++;
   }
 
   let maxval = -1;
   let maxpos = -1;
-  for (let i = d; i < maxLag; i++) {
+  for (let i = d; i < maxLag - 1; i++) {
     if (c[i] > maxval) {
       maxval = c[i];
       maxpos = i;
