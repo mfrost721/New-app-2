@@ -3,6 +3,7 @@ import {
   generateScaleNotes,
   generateArpeggioNotes,
   getPianoExercisesByLevel,
+  getPianoExerciseById,
   createDynamicScaleExercise,
 } from '../lib/music/pianoCurriculum';
 import {
@@ -63,6 +64,21 @@ describe('Class Piano III & IV Curriculum', () => {
     expect(dynamicEx.keySignature).toBe('Ab Melodic Minor');
     expect(dynamicEx.targetTempoBpm).toBe(100);
     expect(dynamicEx.targetNotes.length).toBe(29);
+  });
+
+  it('benchmark exercise lookup by ID', () => {
+    const iterations = 100000;
+    const ids = ['p3_scale_c_maj', 'p3_scale_g_maj', 'p4_scale_eb_maj', 'p4_project_happy_birthday', 'p4_arp_d_dim7'];
+
+    const start = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      const id = ids[i % ids.length];
+      getPianoExerciseById(id);
+    }
+    const end = performance.now();
+    const duration = end - start;
+    console.log(`[Benchmark] 100k getPianoExerciseById lookups took ${duration.toFixed(3)}ms`);
+    expect(duration).toBeGreaterThan(0);
   });
 });
 

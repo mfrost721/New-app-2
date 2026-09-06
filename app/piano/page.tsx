@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import KeyboardVisualizer from '@/components/KeyboardVisualizer';
 import ScoreViewer from '@/components/ScoreViewer';
 import { recordPracticeAttemptInStore, loadUserStore, UserStoreState } from '@/lib/storage/store';
@@ -10,6 +10,7 @@ import {
   PianoLevel,
   PianoCategory,
   getPianoExercisesByLevel,
+  getPianoExerciseById,
   createDynamicScaleExercise
 } from '@/lib/music/pianoCurriculum';
 import {
@@ -64,22 +65,24 @@ export default function PianoPage() {
     setUserStore(loadUserStore());
   }, []);
 
-  // Filter exercises
-  let currentExercise: PianoExercise | undefined;
-  if (selectedExerciseId.startsWith('dynamic_')) {
-    currentExercise = createDynamicScaleExercise(customKey, customScaleType, selectedLevel);
-  } else {
-    currentExercise = CURRICULUM_EXERCISES.find(ex => ex.id === selectedExerciseId);
-  }
+  // Filter exercises (memoized)
+  const currentExercise: PianoExercise = useMemo(() => {
+    let exercise: PianoExercise | undefined;
+    if (selectedExerciseId.startsWith('dynamic_')) {
+      exercise = createDynamicScaleExercise(customKey, customScaleType, selectedLevel);
+    } else {
+      exercise = getPianoExerciseById(selectedExerciseId);
+    }
 
-  if (!currentExercise) {
-    currentExercise = CURRICULUM_EXERCISES[0];
-  }
+    return exercise || CURRICULUM_EXERCISES[0];
+  }, [selectedExerciseId, customKey, customScaleType, selectedLevel]);
 
-  const exercisesForLevel = getPianoExercisesByLevel(selectedLevel);
-  const filteredExercises = selectedCategory === 'all'
-    ? exercisesForLevel
-    : exercisesForLevel.filter(ex => ex.category === selectedCategory);
+  const filteredExercises = useMemo(() => {
+    const exercisesForLevel = getPianoExercisesByLevel(selectedLevel);
+    return selectedCategory === 'all'
+      ? exercisesForLevel
+      : exercisesForLevel.filter(ex => ex.category === selectedCategory);
+  }, [selectedLevel, selectedCategory]);
 
   // Reset attempt buffer when exercise changes
   const handleSelectExercise = (id: string) => {

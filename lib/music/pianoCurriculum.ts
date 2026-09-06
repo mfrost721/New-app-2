@@ -414,8 +414,12 @@ export function getPianoExercisesByCategory(category: PianoCategory): PianoExerc
   return CURRICULUM_EXERCISES.filter(ex => ex.category === category);
 }
 
+const EXERCISES_BY_ID = new Map<string, PianoExercise>(
+  CURRICULUM_EXERCISES.map(ex => [ex.id, ex])
+);
+
 export function getPianoExerciseById(id: string): PianoExercise | undefined {
-  return CURRICULUM_EXERCISES.find(ex => ex.id === id);
+  return EXERCISES_BY_ID.get(id);
 }
 
 export function createDynamicScaleExercise(
