@@ -64,7 +64,7 @@ describe('Component Rendering & Interactive Behavior', () => {
   });
 
   describe('PitchClassClock', () => {
-    it('renders 12 node buttons and highlights selected pitch classes', () => {
+    it('renders 12 node buttons and highlights selected pitch classes with accessible SVG attributes', () => {
       const handleToggle = vi.fn();
       render(
         <PitchClassClock
@@ -73,6 +73,8 @@ describe('Component Rendering & Interactive Behavior', () => {
           showNoteNames={true}
         />
       );
+
+      screen.getByRole('group', { name: /Interactive Pitch-Class Clock Visualizer/i });
 
       const nodes = screen.getAllByRole('button');
       expect(nodes.length).toBe(12);
