@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-
 export interface ScoreNote {
   pitch: string; // e.g., 'C4', 'E4', 'G4', 'B4'
   duration: 'quarter' | 'half' | 'whole' | 'eighth';
