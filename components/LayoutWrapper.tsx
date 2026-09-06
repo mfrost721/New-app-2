@@ -35,7 +35,10 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans">
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center space-x-2">
+        <Link
+          href="/"
+          className="flex items-center space-x-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+        >
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-950 font-black text-lg shadow-md">
             ❄
           </div>
@@ -66,7 +69,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       {/* Main Body */}
       <div className="flex-1 flex flex-col md:flex-row">
         {/* Desktop Sidebar / Mobile Nav Bar */}
-        <nav className="w-full md:w-64 bg-slate-900 border-r border-slate-800 p-4 shrink-0">
+        <nav className="w-full md:w-64 bg-slate-900 border-r border-slate-800 p-4 shrink-0" aria-label="Main Navigation">
           <div className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto pb-2 md:pb-0">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -75,7 +78,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
                     isActive
                       ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold'
                       : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'

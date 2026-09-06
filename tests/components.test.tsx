@@ -5,6 +5,11 @@ import KeyboardVisualizer from '../components/KeyboardVisualizer';
 import PitchClassClock from '../components/PitchClassClock';
 import MatrixGrid from '../components/MatrixGrid';
 import ScoreViewer from '../components/ScoreViewer';
+import LayoutWrapper from '../components/LayoutWrapper';
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+}));
 
 describe('Component Rendering & Interactive Behavior', () => {
   describe('KeyboardVisualizer', () => {
@@ -59,7 +64,7 @@ describe('Component Rendering & Interactive Behavior', () => {
   });
 
   describe('PitchClassClock', () => {
-    it('renders 12 node buttons and highlights selected pitch classes', () => {
+    it('renders 12 node buttons and highlights selected pitch classes with accessible SVG attributes', () => {
       const handleToggle = vi.fn();
       render(
         <PitchClassClock
@@ -68,6 +73,8 @@ describe('Component Rendering & Interactive Behavior', () => {
           showNoteNames={true}
         />
       );
+
+      screen.getByRole('group', { name: /Interactive Pitch-Class Clock Visualizer/i });
 
       const nodes = screen.getAllByRole('button');
       expect(nodes.length).toBe(12);
@@ -134,6 +141,25 @@ describe('Component Rendering & Interactive Behavior', () => {
       const noteBtn = screen.getByLabelText(/Note C4, quarter, annotation Root/i);
       fireEvent.click(noteBtn);
       expect(handleNoteClick).toHaveBeenCalledWith(0);
+    });
+  });
+
+  describe('LayoutWrapper', () => {
+    it('renders navigation with accessible label and marks active page with aria-current', () => {
+      render(
+        <LayoutWrapper>
+          <div>Test Content</div>
+        </LayoutWrapper>
+      );
+
+      const nav = screen.getByRole('navigation', { name: 'Main Navigation' });
+      expect(nav).toBeDefined();
+
+      const activeLink = screen.getByRole('link', { name: /Dashboard/i });
+      expect(activeLink.getAttribute('aria-current')).toBe('page');
+
+      const inactiveLink = screen.getByRole('link', { name: /Theory IV/i });
+      expect(inactiveLink.getAttribute('aria-current')).toBeNull();
     });
   });
 });
