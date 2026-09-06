@@ -14,8 +14,8 @@ export type NoteName = typeof NOTE_NAMES[number] | typeof FLAT_NOTE_NAMES[number
  */
 export function noteToPitchClass(note: string): number {
   const rawClean = note.trim().toUpperCase();
-  // Strip octave digits if present at the end, e.g., "C4" -> "C", "F#3" -> "F#"
-  const clean = rawClean.replace(/\d+$/, '');
+  // Strip octave digits if present at the end, e.g., "C4" -> "C", "F#3" -> "F#", "C-1" -> "C"
+  const clean = rawClean.replace(/[-+]?\d+$/, '');
   const map: Record<string, number> = {
     'C': 0, 'B#': 0,
     'C#': 1, 'DB': 1,
@@ -178,9 +178,6 @@ export function formatIntervalVector(vec: [number, number, number, number, numbe
 }
 
 /**
- * Checks if two pitch class sets are equivalent under Tn or TnI.
- */
-/**
  * Common Z-related pairs catalog (Forte designation and Prime forms).
  */
 export const Z_RELATED_PAIRS = [
@@ -208,6 +205,9 @@ export function isZRelatedPair(setA: number[], setB: number[]): boolean {
   return !eq.equivalent;
 }
 
+/**
+ * Checks if two pitch class sets are equivalent under Tn or TnI.
+ */
 export function areSetsEquivalent(setA: number[], setB: number[]): { equivalent: boolean; transformation?: string } {
   const primeA = getPrimeForm(setA);
   const primeB = getPrimeForm(setB);
@@ -217,24 +217,22 @@ export function areSetsEquivalent(setA: number[], setB: number[]): { equivalent:
   const isSamePrime = primeA.every((val, idx) => val === primeB[idx]);
   if (!isSamePrime) return { equivalent: false };
 
-  // Check Tn
-  const normA = getNormalOrder(setA);
-  const normB = getNormalOrder(setB);
+  const pcsB = toPitchClassSet(setB);
+  const equalsB = (arr: number[]) => arr.length === pcsB.length && arr.every((v, i) => v === pcsB[i]);
 
+  // Check Tn
   for (let n = 0; n < 12; n++) {
-    const tA = toPitchClassSet(transposeSet(normA, n));
-    if (tA.length === normB.length && tA.every((v, i) => v === normB[i])) {
+    if (equalsB(toPitchClassSet(transposeSet(setA, n)))) {
       return { equivalent: true, transformation: `T${n}` };
     }
   }
 
   // Check TnI
   for (let n = 0; n < 12; n++) {
-    const tiA = toPitchClassSet(invertSet(normA, n));
-    if (tiA.length === normB.length && tiA.every((v, i) => v === normB[i])) {
+    if (equalsB(toPitchClassSet(invertSet(setA, n)))) {
       return { equivalent: true, transformation: `T${n}I` };
     }
   }
 
-  return { equivalent: true, transformation: 'TnI' };
+  return { equivalent: true, transformation: 'Tn/TnI' };
 }

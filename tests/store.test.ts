@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi, beforeAll, afterAll } from 'vites
 import {
   loadUserStore,
   saveUserStore,
+  updateExamDate,
   recordPracticeAttemptInStore,
   INITIAL_STATE,
   INITIAL_SKILLS,
@@ -56,7 +57,7 @@ describe('Storage and UserStore Engine', () => {
   });
 
   it('handles corrupted JSON in localStorage gracefully without throwing', () => {
-    localStorageMock.setItem('frost_music_lab_user_store_v1', 'invalid{json:');
+    localStorageMock.setItem('frost_music_lab_user_store_v2', 'invalid{json:');
     const store = loadUserStore();
     expect(store.academicStreak).toBe(INITIAL_STATE.academicStreak);
     expect(store.skills.length).toBe(INITIAL_SKILLS.length);
@@ -75,6 +76,15 @@ describe('Storage and UserStore Engine', () => {
     expect(loaded.academicStreak).toBe(12);
     expect(loaded.pianoStreak).toBe(8);
     expect(loaded.totalMinutesStudied).toBe(500);
+  });
+
+  it('updates exam date only when YYYY-MM-DD', () => {
+    const ok = updateExamDate(INITIAL_STATE, '2026-11-15');
+    expect(ok.examDate).toBe('2026-11-15');
+    expect(loadUserStore().examDate).toBe('2026-11-15');
+
+    const bad = updateExamDate(ok, 'not-a-date');
+    expect(bad.examDate).toBe('2026-11-15');
   });
 
   it('returns currentState unchanged if attempt skillId is not found', () => {

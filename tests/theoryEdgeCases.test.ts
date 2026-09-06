@@ -23,6 +23,11 @@ describe('Pitch Class & Set Theory Edge Cases', () => {
     expect(() => noteToPitchClass('UNKNOWN')).toThrow('Invalid note name or integer');
   });
 
+  it('parses negative octave note names', () => {
+    expect(noteToPitchClass('C-1')).toBe(0);
+    expect(noteToPitchClass('F#-1')).toBe(6);
+  });
+
   it('normalizes pitch classes properly in getNormalOrder', () => {
     // Empty set
     expect(getNormalOrder([])).toEqual([]);
@@ -42,6 +47,12 @@ describe('Pitch Class & Set Theory Edge Cases', () => {
     expect(getIntervalVector([0, 7])).toEqual([0, 0, 0, 0, 1, 0]);
     // All-interval tetrachord [0, 1, 4, 6] -> <1 1 1 1 1 1>
     expect(getIntervalVector([0, 1, 4, 6])).toEqual([1, 1, 1, 1, 1, 1]);
+  });
+
+  it('detects transposition equivalence as Tn not TnI', () => {
+    const res = areSetsEquivalent([0, 4, 7], [7, 11, 2]);
+    expect(res.equivalent).toBe(true);
+    expect(res.transformation).toBe('T7');
   });
 
   it('detects set non-equivalence properly', () => {
