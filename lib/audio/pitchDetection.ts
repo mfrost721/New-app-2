@@ -196,7 +196,10 @@ export function autoCorrelate(
   // Performance optimization: limit autocorrelation lag to maxLag based on minFreq.
   // Lags beyond sampleRate / minFreq correspond to frequencies below minFreq (which are rejected).
   // This reduces outer loop iterations from newSize (~2048) to maxLag (~884), saving over 30% CPU per frame.
-  const maxLag = Math.min(newSize, Math.ceil(sampleRate / minFreq) + 2);
+  const boundedLagFromMinFreq = Number.isFinite(minFreq) && minFreq > 0
+    ? Math.ceil(sampleRate / minFreq) + 2
+    : newSize;
+  const maxLag = Math.max(3, Math.min(newSize, boundedLagFromMinFreq));
 
   const c = getScratchBuffer(newSize);
   for (let i = 0; i < maxLag; i++) {
