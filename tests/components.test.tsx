@@ -5,6 +5,11 @@ import KeyboardVisualizer from '../components/KeyboardVisualizer';
 import PitchClassClock from '../components/PitchClassClock';
 import MatrixGrid from '../components/MatrixGrid';
 import ScoreViewer from '../components/ScoreViewer';
+import LayoutWrapper from '../components/LayoutWrapper';
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/theory',
+}));
 
 describe('Component Rendering & Interactive Behavior', () => {
   describe('KeyboardVisualizer', () => {
@@ -132,8 +137,25 @@ describe('Component Rendering & Interactive Behavior', () => {
       expect(screen.getByText('m.1: Tonic Harmony')).toBeDefined();
 
       const noteBtn = screen.getByLabelText(/Note C4, quarter, annotation Root/i);
+      expect(noteBtn.className).toContain('focus-visible:ring-amber-400');
       fireEvent.click(noteBtn);
       expect(handleNoteClick).toHaveBeenCalledWith(0);
+    });
+  });
+
+  describe('LayoutWrapper Navigation Accessibility', () => {
+    it('applies aria-current="page" to active navigation link', () => {
+      render(
+        <LayoutWrapper>
+          <div>Page Content</div>
+        </LayoutWrapper>
+      );
+
+      const activeLink = screen.getByRole('link', { name: /Theory IV/i });
+      expect(activeLink.getAttribute('aria-current')).toBe('page');
+
+      const inactiveLink = screen.getByRole('link', { name: /Dashboard/i });
+      expect(inactiveLink.getAttribute('aria-current')).toBeNull();
     });
   });
 });
