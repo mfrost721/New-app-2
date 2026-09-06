@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { pitchClassToNote } from '@/lib/music/pitchClass';
 
 interface PitchClassClockProps {
@@ -12,12 +12,15 @@ interface PitchClassClockProps {
 const RADIUS = 120;
 const CENTER = 150;
 
-// Precompute coordinates for 12 pitch classes (0..11) to avoid trig operations on render
-const CLOCK_COORDINATES: Array<{ x: number; y: number }> = Array.from({ length: 12 }, (_, pc) => {
+// Precalculate fixed SVG coordinates and note names for all 12 pitch classes at module level
+// to eliminate redundant Math.cos/Math.sin and pitchClassToNote calls on every render.
+const CLOCK_NODES = Array.from({ length: 12 }, (_, pc) => {
   const angle = (pc * 30 - 90) * (Math.PI / 180);
   return {
+    pc,
     x: CENTER + RADIUS * Math.cos(angle),
     y: CENTER + RADIUS * Math.sin(angle),
+    noteName: pitchClassToNote(pc),
   };
 });
 
@@ -26,6 +29,9 @@ function PitchClassClock({
   onTogglePc,
   showNoteNames = true,
 }: PitchClassClockProps) {
+  // O(1) selection lookup set memoized per selectedPcs array change
+  const selectedPcsSet = useMemo(() => new Set(selectedPcs), [selectedPcs]);
+
   const handleToggle = (pc: number) => {
     if (onTogglePc) onTogglePc(pc);
   };
@@ -48,8 +54,8 @@ function PitchClassClock({
         {selectedPcs.length > 1 &&
           selectedPcs.map((pcA, i) => {
             const nextPc = selectedPcs[(i + 1) % selectedPcs.length];
-            const coordA = CLOCK_COORDINATES[pcA];
-            const coordB = CLOCK_COORDINATES[nextPc];
+            const coordA = CLOCK_NODES[pcA % 12];
+            const coordB = CLOCK_NODES[nextPc % 12];
             if (!coordA || !coordB) return null;
             return (
               <line
@@ -66,9 +72,8 @@ function PitchClassClock({
           })}
 
         {/* 12 Pitch Class Nodes */}
-        {CLOCK_COORDINATES.map(({ x, y }, pc) => {
-          const isSelected = selectedPcs.includes(pc);
-          const noteName = pitchClassToNote(pc);
+        {CLOCK_NODES.map(({ pc, x, y, noteName }) => {
+          const isSelected = selectedPcsSet.has(pc);
 
           return (
             <g
