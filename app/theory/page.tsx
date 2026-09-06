@@ -17,6 +17,12 @@ import {
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
 import { Brain, Check, Clock, Sparkles, HelpCircle, ArrowRight, RotateCcw } from 'lucide-react';
 
+function getSecureRandomSeed(max = 10000): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] % max;
+}
+
 export default function TheoryPage() {
   const [activeTab, setActiveTab] = useState<'drills' | 'setTheory' | 'matrixSpeedRun' | 'modes' | 'scoreAnalysis'>('drills');
 
@@ -193,7 +199,7 @@ export default function TheoryPage() {
               ))}
 
               <button
-                onClick={() => setSeedInput(Math.floor(Math.random() * 10000))}
+                onClick={() => setSeedInput(getSecureRandomSeed())}
                 className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 text-xs flex items-center space-x-1"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />

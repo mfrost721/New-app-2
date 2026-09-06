@@ -6,6 +6,7 @@ import PitchClassClock from '../components/PitchClassClock';
 import MatrixGrid from '../components/MatrixGrid';
 import ScoreViewer from '../components/ScoreViewer';
 import LayoutWrapper from '../components/LayoutWrapper';
+import TheoryPage from '../app/theory/page';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
@@ -160,6 +161,31 @@ describe('Component Rendering & Interactive Behavior', () => {
 
       const inactiveLink = screen.getByRole('link', { name: /Theory IV/i });
       expect(inactiveLink.getAttribute('aria-current')).toBeNull();
+    });
+  });
+
+  describe('TheoryPage', () => {
+    it('uses crypto.getRandomValues to generate a new seed when New Seed button is clicked', () => {
+      const getRandomValuesSpy = vi.spyOn(crypto, 'getRandomValues').mockImplementation((array) => {
+        if (array instanceof Uint32Array) {
+          array[0] = 54321;
+        }
+        return array;
+      });
+
+      render(<TheoryPage />);
+
+      // Initial seed display is #42
+      expect(screen.getByText('Seed: #42')).toBeDefined();
+
+      const newSeedButton = screen.getByRole('button', { name: /New Seed/i });
+      fireEvent.click(newSeedButton);
+
+      expect(getRandomValuesSpy).toHaveBeenCalled();
+      // 54321 % 10000 = 4321
+      expect(screen.getByText('Seed: #4321')).toBeDefined();
+
+      getRandomValuesSpy.mockRestore();
     });
   });
 });
