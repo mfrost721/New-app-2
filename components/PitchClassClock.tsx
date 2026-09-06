@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { pitchClassToNote } from '@/lib/music/pitchClass';
 
 interface PitchClassClockProps {
@@ -9,22 +9,28 @@ interface PitchClassClockProps {
   showNoteNames?: boolean;
 }
 
-export default function PitchClassClock({
+const RADIUS = 120;
+const CENTER = 150;
+
+// Precalculate fixed SVG coordinates and note names for all 12 pitch classes at module level
+// to eliminate redundant Math.cos/Math.sin and pitchClassToNote calls on every render.
+const CLOCK_NODES = Array.from({ length: 12 }, (_, pc) => {
+  const angle = (pc * 30 - 90) * (Math.PI / 180);
+  return {
+    pc,
+    x: CENTER + RADIUS * Math.cos(angle),
+    y: CENTER + RADIUS * Math.sin(angle),
+    noteName: pitchClassToNote(pc),
+  };
+});
+
+function PitchClassClock({
   selectedPcs = [],
   onTogglePc,
   showNoteNames = true,
 }: PitchClassClockProps) {
-  const radius = 120;
-  const center = 150;
-
-  const getCoordinates = (pc: number) => {
-    // 0 (C) is at top (12 o'clock), moving clockwise
-    const angle = (pc * 30 - 90) * (Math.PI / 180);
-    return {
-      x: center + radius * Math.cos(angle),
-      y: center + radius * Math.sin(angle),
-    };
-  };
+  // O(1) selection lookup set memoized per selectedPcs array change
+  const selectedPcsSet = useMemo(() => new Set(selectedPcs), [selectedPcs]);
 
   const handleToggle = (pc: number) => {
     if (onTogglePc) onTogglePc(pc);
@@ -35,9 +41,9 @@ export default function PitchClassClock({
       <svg width={300} height={300} className="select-none">
         {/* Background track circle */}
         <circle
-          cx={center}
-          cy={center}
-          r={radius}
+          cx={CENTER}
+          cy={CENTER}
+          r={RADIUS}
           fill="none"
           stroke="#334155"
           strokeWidth="3"
@@ -48,8 +54,9 @@ export default function PitchClassClock({
         {selectedPcs.length > 1 &&
           selectedPcs.map((pcA, i) => {
             const nextPc = selectedPcs[(i + 1) % selectedPcs.length];
-            const coordA = getCoordinates(pcA);
-            const coordB = getCoordinates(nextPc);
+            const coordA = CLOCK_NODES[pcA % 12];
+            const coordB = CLOCK_NODES[nextPc % 12];
+            if (!coordA || !coordB) return null;
             return (
               <line
                 key={`line-${pcA}-${nextPc}`}
@@ -65,10 +72,8 @@ export default function PitchClassClock({
           })}
 
         {/* 12 Pitch Class Nodes */}
-        {Array.from({ length: 12 }, (_, pc) => {
-          const { x, y } = getCoordinates(pc);
-          const isSelected = selectedPcs.includes(pc);
-          const noteName = pitchClassToNote(pc);
+        {CLOCK_NODES.map(({ pc, x, y, noteName }) => {
+          const isSelected = selectedPcsSet.has(pc);
 
           return (
             <g
@@ -123,3 +128,5 @@ export default function PitchClassClock({
     </div>
   );
 }
+
+export default React.memo(PitchClassClock);
