@@ -110,4 +110,16 @@ function MatrixGrid({
 }
 
 // Memoize MatrixGrid to prevent unnecessary re-renders when parent state updates
-export default React.memo(MatrixGrid);
+export default React.memo(MatrixGrid, (prevProps, nextProps) => {
+  if (
+    prevProps.userMatrix !== nextProps.userMatrix ||
+    prevProps.onCellChange !== nextProps.onCellChange ||
+    prevProps.showNotes !== nextProps.showNotes ||
+    prevProps.interactive !== nextProps.interactive ||
+    prevProps.p0Row.length !== nextProps.p0Row.length
+  ) {
+    return false;
+  }
+
+  return prevProps.p0Row.every((value, index) => value === nextProps.p0Row[index]);
+});
