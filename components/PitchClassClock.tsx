@@ -35,7 +35,7 @@ export default function PitchClassClock({
       <svg
         width={300}
         height={300}
-        role="img"
+        role="group"
         aria-label="Interactive Pitch-Class Clock Visualizer"
         className="select-none overflow-visible"
       >

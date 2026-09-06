@@ -69,8 +69,7 @@ describe('Component Rendering & Interactive Behavior', () => {
         />
       );
 
-      const svgVisualizer = screen.getByRole('img', { name: /Interactive Pitch-Class Clock Visualizer/i });
-      expect(svgVisualizer).toBeDefined();
+      screen.getByRole('group', { name: /Interactive Pitch-Class Clock Visualizer/i });
 
       const nodes = screen.getAllByRole('button');
       expect(nodes.length).toBe(12);
