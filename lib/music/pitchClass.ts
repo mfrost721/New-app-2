@@ -48,8 +48,17 @@ export function pitchClassToNote(pc: number, preferFlat = false): string {
  * Normalizes an array of pitch classes into a sorted, unique set in mod 12.
  */
 export function toPitchClassSet(pcs: number[]): number[] {
-  const set = Array.from(new Set(pcs.map(p => ((p % 12) + 12) % 12)));
-  return set.sort((a, b) => a - b);
+  let mask = 0;
+  for (let i = 0; i < pcs.length; i++) {
+    mask |= (1 << (((pcs[i] % 12) + 12) % 12));
+  }
+  const result: number[] = [];
+  for (let i = 0; i < 12; i++) {
+    if ((mask & (1 << i)) !== 0) {
+      result.push(i);
+    }
+  }
+  return result;
 }
 
 /**
