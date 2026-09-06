@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { updateSkillMastery, calculateExamReadiness, SkillItem, PracticeAttempt } from '../lib/adaptive/mastery';
-import { getRhythmicSyllable, isSyncopated, COMMON_METERS } from '../lib/music/rhythm';
+import {
+  getRhythmicSyllable,
+  isSyncopated,
+  isValidAdditiveGrouping,
+  getTupletDurationFactor,
+  COMMON_METERS,
+  COMMON_TUPLETS,
+} from '../lib/music/rhythm';
 
 describe('Rhythm & Meter Engine Unit Tests', () => {
   it('returns valid meter definitions for common meters', () => {
@@ -40,6 +47,30 @@ describe('Rhythm & Meter Engine Unit Tests', () => {
     expect(isSyncopated(1)).toBe(true);  // Off-beat sub
     expect(isSyncopated(2)).toBe(false); // Off-beat main
     expect(isSyncopated(3)).toBe(true);  // Off-beat sub
+  });
+
+  it('validates additive beat groupings correctly', () => {
+    // Valid groupings
+    expect(isValidAdditiveGrouping([2, 2, 3], 7)).toBe(true);
+    expect(isValidAdditiveGrouping([3, 2], 5)).toBe(true);
+    expect(isValidAdditiveGrouping([3, 3, 3, 2], 11)).toBe(true);
+    expect(isValidAdditiveGrouping([1, 1, 1, 1], 4)).toBe(true);
+
+    // Invalid groupings
+    expect(isValidAdditiveGrouping([2, 2, 2], 7)).toBe(false);
+    expect(isValidAdditiveGrouping([3, 3], 5)).toBe(false);
+    expect(isValidAdditiveGrouping([2, 2, 3], 8)).toBe(false);
+
+    // Edge cases
+    expect(isValidAdditiveGrouping([], 0)).toBe(true);
+    expect(isValidAdditiveGrouping([], 5)).toBe(false);
+    expect(isValidAdditiveGrouping([7], 7)).toBe(true);
+  });
+
+  it('calculates tuplet duration factors accurately', () => {
+    expect(getTupletDurationFactor(COMMON_TUPLETS['Triplet'])).toBeCloseTo(2 / 3);
+    expect(getTupletDurationFactor(COMMON_TUPLETS['Duplet'])).toBeCloseTo(3 / 2);
+    expect(getTupletDurationFactor(COMMON_TUPLETS['Quintuplet'])).toBeCloseTo(4 / 5);
   });
 });
 
