@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { pitchClassToNote } from '@/lib/music/pitchClass';
 
 interface PitchClassClockProps {
@@ -135,4 +135,4 @@ function PitchClassClock({
   );
 }
 
-export default React.memo(PitchClassClock);
+export default memo(PitchClassClock);
