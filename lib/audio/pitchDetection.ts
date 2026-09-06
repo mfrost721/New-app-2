@@ -193,8 +193,16 @@ export function autoCorrelate(
   const newSize = buf.length;
   if (newSize < 32) return null;
 
+  // Performance optimization: limit autocorrelation lag to maxLag based on minFreq.
+  // Lags beyond sampleRate / minFreq correspond to frequencies below minFreq (which are rejected).
+  // This reduces outer loop iterations from newSize (~2048) to maxLag (~884), saving over 30% CPU per frame.
+  const boundedLagFromMinFreq = Number.isFinite(minFreq) && minFreq > 0
+    ? Math.ceil(sampleRate / minFreq) + 2
+    : newSize;
+  const maxLag = Math.max(3, Math.min(newSize, boundedLagFromMinFreq));
+
   const c = getScratchBuffer(newSize);
-  for (let i = 0; i < newSize; i++) {
+  for (let i = 0; i < maxLag; i++) {
     for (let j = 0; j < newSize - i; j++) {
       c[i] += buf[j] * buf[j + i];
     }
@@ -203,13 +211,13 @@ export function autoCorrelate(
   if (newSize < 3) return null;
 
   let d = 0;
-  while (d < newSize - 1 && c[d] > c[d + 1]) {
+  while (d < maxLag - 2 && c[d] > c[d + 1]) {
     d++;
   }
 
   let maxval = -1;
   let maxpos = -1;
-  for (let i = d; i < newSize; i++) {
+  for (let i = d; i < maxLag - 1; i++) {
     if (c[i] > maxval) {
       maxval = c[i];
       maxpos = i;
