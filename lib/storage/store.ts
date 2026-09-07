@@ -17,54 +17,54 @@ export interface UserStoreState {
   history: PracticeAttempt[];
 }
 
-const STORAGE_KEY = 'frost_music_lab_user_store_v1';
+const STORAGE_KEY = 'frost_music_lab_user_store_v2';
 
 export const INITIAL_SKILLS: SkillItem[] = [
   // Theory IV
-  { id: 't1', category: 'Theory IV', topic: 'Pitch-Class Sets & Prime Form', mastery: 55, totalAttempts: 10, correctAttempts: 5, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 't2', category: 'Theory IV', topic: 'Interval-Class Vectors', mastery: 62, totalAttempts: 8, correctAttempts: 5, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 't3', category: 'Theory IV', topic: 'Twelve-Tone Matrix & Transformations', mastery: 48, totalAttempts: 12, correctAttempts: 5, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 't4', category: 'Theory IV', topic: 'Modes & Symmetrical Scales', mastery: 75, totalAttempts: 15, correctAttempts: 12, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 't5', category: 'Theory IV', topic: 'Score Analysis & Formal Structures', mastery: 70, totalAttempts: 6, correctAttempts: 4, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 't6', category: 'Theory IV', topic: '20th Century Rhythm & Mixed Meter', mastery: 58, totalAttempts: 9, correctAttempts: 5, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 't1', category: 'Theory IV', topic: 'Pitch-Class Sets & Prime Form', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 't2', category: 'Theory IV', topic: 'Interval-Class Vectors', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 't3', category: 'Theory IV', topic: 'Twelve-Tone Matrix & Transformations', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 't4', category: 'Theory IV', topic: 'Modes & Symmetrical Scales', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 't5', category: 'Theory IV', topic: 'Score Analysis & Formal Structures', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 't6', category: 'Theory IV', topic: '20th Century Rhythm & Mixed Meter', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
 
   // Aural Skills IV
-  { id: 'a1', category: 'Aural Skills IV', topic: 'Scale-Degree Recognition & Solfege', mastery: 80, totalAttempts: 20, correctAttempts: 16, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'a2', category: 'Aural Skills IV', topic: 'Seventh-Chord Quality & Inversions', mastery: 52, totalAttempts: 18, correctAttempts: 9, lastPracticed: '', recentLatencyMs: [], errorHistory: ['Confused 2nd and 3rd inversion'] },
-  { id: 'a3', category: 'Aural Skills IV', topic: 'Second-Inversion (6/4) Functions', mastery: 60, totalAttempts: 10, correctAttempts: 6, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'a4', category: 'Aural Skills IV', topic: 'Secondary Dominants by Ear', mastery: 58, totalAttempts: 14, correctAttempts: 8, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'a5', category: 'Aural Skills IV', topic: 'Non-Harmonic Tone Aural ID', mastery: 64, totalAttempts: 11, correctAttempts: 7, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'a6', category: 'Aural Skills IV', topic: 'Melodic Dictation', mastery: 65, totalAttempts: 12, correctAttempts: 8, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'a7', category: 'Aural Skills IV', topic: 'Sight Singing Accuracy', mastery: 72, totalAttempts: 15, correctAttempts: 11, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'a1', category: 'Aural Skills IV', topic: 'Scale-Degree Recognition & Solfege', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'a2', category: 'Aural Skills IV', topic: 'Seventh-Chord Quality & Inversions', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'a3', category: 'Aural Skills IV', topic: 'Second-Inversion (6/4) Functions', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'a4', category: 'Aural Skills IV', topic: 'Secondary Dominants by Ear', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'a5', category: 'Aural Skills IV', topic: 'Non-Harmonic Tone Aural ID', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'a6', category: 'Aural Skills IV', topic: 'Melodic Dictation', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'a7', category: 'Aural Skills IV', topic: 'Sight Singing Accuracy', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
 
   // Class Piano III
-  { id: 'p3_scale_c_maj', category: 'Class Piano III', topic: 'C Major Scale (2 Octaves)', mastery: 85, totalAttempts: 15, correctAttempts: 13, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p3_scale_g_maj', category: 'Class Piano III', topic: 'G Major Scale (2 Octaves)', mastery: 80, totalAttempts: 12, correctAttempts: 10, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p3_scale_d_maj', category: 'Class Piano III', topic: 'D Major Scale (2 Octaves)', mastery: 75, totalAttempts: 10, correctAttempts: 8, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p3_scale_a_min_harm', category: 'Class Piano III', topic: 'A Harmonic Minor Scale', mastery: 72, totalAttempts: 11, correctAttempts: 8, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p3_scale_e_min_mel', category: 'Class Piano III', topic: 'E Melodic Minor Scale', mastery: 70, totalAttempts: 9, correctAttempts: 6, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p3_arp_c_maj', category: 'Class Piano III', topic: 'C Major Tonic Arpeggio', mastery: 78, totalAttempts: 14, correctAttempts: 11, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p3_cadence_c', category: 'Class Piano III', topic: 'C Major Primary Cadence', mastery: 74, totalAttempts: 10, correctAttempts: 7, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_scale_c_maj', category: 'Class Piano III', topic: 'C Major Scale (2 Octaves)', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_scale_g_maj', category: 'Class Piano III', topic: 'G Major Scale (2 Octaves)', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_scale_d_maj', category: 'Class Piano III', topic: 'D Major Scale (2 Octaves)', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_scale_a_min_harm', category: 'Class Piano III', topic: 'A Harmonic Minor Scale', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_scale_e_min_mel', category: 'Class Piano III', topic: 'E Melodic Minor Scale', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_arp_c_maj', category: 'Class Piano III', topic: 'C Major Tonic Arpeggio', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p3_cadence_c', category: 'Class Piano III', topic: 'C Major Primary Cadence', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
 
   // Class Piano IV
-  { id: 'p4_scale_eb_maj', category: 'Class Piano IV', topic: 'Eb Major Scale (100bpm)', mastery: 82, totalAttempts: 25, correctAttempts: 21, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p4_scale_fs_min_harm', category: 'Class Piano IV', topic: 'F# Harmonic Minor Scale (100bpm)', mastery: 68, totalAttempts: 18, correctAttempts: 12, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p4_scale_ab_maj', category: 'Class Piano IV', topic: 'Ab Major Scale (100bpm)', mastery: 78, totalAttempts: 20, correctAttempts: 16, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p4_scale_cs_min_mel', category: 'Class Piano IV', topic: 'C# Melodic Minor Scale (100bpm)', mastery: 65, totalAttempts: 15, correctAttempts: 9, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p4_arp_d_dim7', category: 'Class Piano IV', topic: 'D Diminished 7th & Resolution', mastery: 68, totalAttempts: 14, correctAttempts: 9, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p4_harm_trans_g_to_a', category: 'Class Piano IV', topic: 'Melody Harmonization & Transposition', mastery: 61, totalAttempts: 10, correctAttempts: 6, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p4_sight_reading_lvl3', category: 'Class Piano IV', topic: 'Level III Sight-Reading Exam', mastery: 66, totalAttempts: 12, correctAttempts: 8, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
-  { id: 'p4_project_happy_birthday', category: 'Class Piano IV', topic: 'Happy Birthday Project', mastery: 75, totalAttempts: 8, correctAttempts: 6, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_scale_eb_maj', category: 'Class Piano IV', topic: 'Eb Major Scale (100bpm)', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_scale_fs_min_harm', category: 'Class Piano IV', topic: 'F# Harmonic Minor Scale (100bpm)', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_scale_ab_maj', category: 'Class Piano IV', topic: 'Ab Major Scale (100bpm)', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_scale_cs_min_mel', category: 'Class Piano IV', topic: 'C# Melodic Minor Scale (100bpm)', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_arp_d_dim7', category: 'Class Piano IV', topic: 'D Diminished 7th & Resolution', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_harm_trans_g_to_a', category: 'Class Piano IV', topic: 'Melody Harmonization & Transposition', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_sight_reading_lvl3', category: 'Class Piano IV', topic: 'Level III Sight-Reading Exam', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+  { id: 'p4_project_happy_birthday', category: 'Class Piano IV', topic: 'Happy Birthday Project', mastery: 0, totalAttempts: 0, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
 ];
 
 export const INITIAL_STATE: UserStoreState = {
   examDate: '2026-12-08',
   isRoadMode: false,
-  academicStreak: 5,
-  pianoStreak: 3,
-  lastAcademicDate: new Date().toISOString().split('T')[0],
-  lastPianoDate: new Date().toISOString().split('T')[0],
-  totalMinutesStudied: 340,
+  academicStreak: 0,
+  pianoStreak: 0,
+  lastAcademicDate: null,
+  lastPianoDate: null,
+  totalMinutesStudied: 0,
   skills: INITIAL_SKILLS,
   history: [],
 };
@@ -75,7 +75,8 @@ export function loadUserStore(): UserStoreState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return INITIAL_STATE;
     const parsed = JSON.parse(raw);
-    return { ...INITIAL_STATE, ...parsed };
+    const skills = Array.isArray(parsed?.skills) ? parsed.skills : INITIAL_SKILLS;
+    return { ...INITIAL_STATE, ...parsed, skills };
   } catch {
     return INITIAL_STATE;
   }
@@ -88,6 +89,15 @@ export function saveUserStore(state: UserStoreState): void {
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
+}
+
+export function updateExamDate(state: UserStoreState, examDate: string): UserStoreState {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(examDate)) {
+    return state;
+  }
+  const newState = { ...state, examDate };
+  saveUserStore(newState);
+  return newState;
 }
 
 export function recordPracticeAttemptInStore(

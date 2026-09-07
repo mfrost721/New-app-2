@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { loadUserStore, UserStoreState } from '@/lib/storage/store';
+import { loadUserStore, updateExamDate, UserStoreState } from '@/lib/storage/store';
 import { calculateExamReadiness } from '@/lib/adaptive/mastery';
 import { generatePracticePrescription } from '@/lib/adaptive/practicePrescription';
 import { Zap, Clock, CheckCircle2 } from 'lucide-react';
@@ -54,13 +54,20 @@ export default function HomeDashboard() {
         <div>
           <div className="flex items-center space-x-2 text-xs font-bold text-amber-400 uppercase tracking-widest mb-1">
             <Clock className="w-4 h-4" />
-            <span>Target Exam Date: {store.examDate}</span>
+            <label htmlFor="exam-date" className="cursor-pointer">Target Exam Date:</label>
+            <input
+              type="date"
+              id="exam-date"
+              value={store.examDate}
+              onChange={(e) => setStore(updateExamDate(store, e.target.value))}
+              className="bg-slate-950 text-amber-400 border border-slate-700 rounded px-2 py-0.5 text-xs font-bold focus:outline-none focus:border-amber-400"
+            />
           </div>
           <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">
             {daysLeft} Days Until Examination
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Target Pace: <span className="text-emerald-400 font-semibold">+2.1 mastery pts / week</span> required for 90%+ pass guarantee.
+            Fresh start. Mastery stays at 0% until you actually practice.
           </p>
         </div>
 
