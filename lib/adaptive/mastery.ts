@@ -24,6 +24,8 @@ export interface PracticeAttempt {
   responseTimeMs: number;
   errorType?: string;
   date: string;
+  /** When false, the attempt is logged but does not change mastery, streaks, or study time. */
+  countsTowardMastery?: boolean;
 }
 
 export interface ExamReadiness {
