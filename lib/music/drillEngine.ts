@@ -47,6 +47,106 @@ export interface DrillQuestion {
   hint?: string;
   poolSize?: number;
   isReview?: boolean;
+
+  // Backward-compatible metadata
+  templateId?: string;
+  variantKey?: string;
+  subtopic?: string;
+  answerType?: string;
+  learningObjective?: string;
+  sourceReferences?: string[];
+}
+
+export interface SubtopicMapping {
+  subtopic: string;
+  skillId: string;
+  category: DrillCategory;
+  description: string;
+}
+
+export const SUBTOPIC_REGISTRY: Record<string, SubtopicMapping> = {
+  'Key Signatures': {
+    subtopic: 'Key Signatures',
+    skillId: 't4',
+    category: 'tonal',
+    description: 'Identification of key signature accidentals',
+  },
+  'Chord Spelling': {
+    subtopic: 'Chord Spelling',
+    skillId: 'a2',
+    category: 'tonal',
+    description: 'Spelling root position triads and 7th chords',
+  },
+  'Secondary Dominants': {
+    subtopic: 'Secondary Dominants',
+    skillId: 'a4',
+    category: 'tonal',
+    description: 'Secondary dominant Roman numeral identification',
+  },
+  'Cadence Identification': {
+    subtopic: 'Cadence Identification',
+    skillId: 'a3',
+    category: 'tonal',
+    description: 'Cadence types and harmonic resolutions',
+  },
+  'Formal Analysis': {
+    subtopic: 'Formal Analysis',
+    skillId: 't5',
+    category: 'form',
+    description: 'Binary, ternary, rondo, and sonata form structures',
+  },
+  'Modes & Symmetrical Scales': {
+    subtopic: 'Modes & Symmetrical Scales',
+    skillId: 't4',
+    category: 'modes',
+    description: 'Church modes, pentatonic, whole-tone, and octatonic scales',
+  },
+  'Prime Form Calculation': {
+    subtopic: 'Prime Form Calculation',
+    skillId: 't1',
+    category: 'setTheory',
+    description: 'Forte prime form computation',
+  },
+  'Interval-Class Vector': {
+    subtopic: 'Interval-Class Vector',
+    skillId: 't2',
+    category: 'setTheory',
+    description: 'Interval-class vector <ic1..ic6> calculation',
+  },
+  'Z-Related Sets': {
+    subtopic: 'Z-Related Sets',
+    skillId: 't1',
+    category: 'setTheory',
+    description: 'Z-relation properties and non-isomorphic set identification',
+  },
+  '12-Tone Serial Transformations': {
+    subtopic: '12-Tone Serial Transformations',
+    skillId: 't3',
+    category: 'twelveTone',
+    description: 'P, I, R, and RI row transformations',
+  },
+  'Meter Classification': {
+    subtopic: 'Meter Classification',
+    skillId: 't6',
+    category: 'rhythm',
+    description: 'Classification of time signatures and metric groupings',
+  },
+  'Tuplet Ratios': {
+    subtopic: 'Tuplet Ratios',
+    skillId: 't6',
+    category: 'rhythm',
+    description: 'Irregular tuplet division ratios',
+  },
+  '20th-Century Post-Tonal Concepts': {
+    subtopic: '20th-Century Post-Tonal Concepts',
+    skillId: 't5',
+    category: 'postTonal',
+    description: 'Polychords, quartal harmony, tone clusters, and post-tonal concepts',
+  },
+};
+
+export function getSkillIdForSubtopic(subtopic: string): string | undefined {
+  return SUBTOPIC_REGISTRY[subtopic]?.skillId;
 }
 
 export interface AnswerValidationResult {
@@ -88,12 +188,13 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
         const selectedKey = sample(keys);
         const info = KEY_SIGNATURES[selectedKey];
         const countText = `${info.accidentalsCount} ${info.accidentalType === 'none' ? 'accidentals' : info.accidentalType}`;
+        const subtopic = 'Key Signatures';
         return {
           id: `tonal_ks_${seed}`,
           category: 'tonal',
           difficulty: 1,
-          skillId: 't4',
-          topic: 'Key Signatures',
+          skillId: getSkillIdForSubtopic(subtopic) ?? 't4',
+          topic: subtopic,
           prompt: `How many sharps or flats are in the key signature of ${info.key}?`,
           inputType: 'spelling_text',
           correctAnswer: countText,
@@ -105,6 +206,12 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
           ],
           spellingSensitive: true,
           explanation: `${info.key} has ${info.accidentalsCount} ${info.accidentalType}${info.accidentalNotes.length > 0 ? ` (${info.accidentalNotes.join(', ')})` : ''}.`,
+          templateId: 'tonal_ks',
+          variantKey: `key:${info.key}`,
+          subtopic,
+          answerType: 'spelling_text',
+          learningObjective: 'Identify key signature accidentals for major and minor keys.',
+          sourceReferences: ['Kostka & Payne Tonal Harmony Ch. 1'],
         };
       } else if (difficulty === 2) {
         // Triad / 7th chord spelling
@@ -113,13 +220,14 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
         const qual = sample(qualities);
         const spelling = spellChord(root, qual, 0);
         const notesStr = spelling.pitchClasses.map(pc => pitchClassToNote(pc)).join(' ');
+        const subtopic = 'Chord Spelling';
 
         return {
           id: `tonal_chord_${seed}`,
           category: 'tonal',
           difficulty: 2,
-          skillId: 'a2',
-          topic: 'Chord Spelling',
+          skillId: getSkillIdForSubtopic(subtopic) ?? 'a2',
+          topic: subtopic,
           prompt: `Spell the root-position ${qual} chord built on root ${root} (space-separated notes):`,
           inputType: 'spelling_text',
           correctAnswer: notesStr,
@@ -130,6 +238,12 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
           ],
           spellingSensitive: false,
           explanation: `The ${qual} chord on ${root} contains pitch classes [${spelling.pitchClasses.join(', ')}] standard note spelling (${notesStr}).`,
+          templateId: 'tonal_chord',
+          variantKey: `root:${root}|qual:${qual}`,
+          subtopic,
+          answerType: 'spelling_text',
+          learningObjective: 'Spell root-position triads and seventh chords.',
+          sourceReferences: ['Kostka & Payne Tonal Harmony Ch. 3'],
         };
       } else if (difficulty === 3) {
         // Secondary dominant
@@ -137,54 +251,75 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
         const target = sample(targetDegrees);
         const key = sample(['C', 'G', 'D', 'F', 'Bb']);
         const secDom = generateSecondaryDominant(key, target);
+        const subtopic = 'Secondary Dominants';
         return {
           id: `tonal_sec_${seed}`,
           category: 'tonal',
           difficulty: 3,
-          skillId: 'a4',
-          topic: 'Secondary Dominants',
+          skillId: getSkillIdForSubtopic(subtopic) ?? 'a4',
+          topic: subtopic,
           prompt: `In the key of ${key} major, what is the Roman numeral for the dominant 7th of ${target}?`,
           inputType: 'spelling_text',
           correctAnswer: `V7/${target}`,
           acceptableAnswers: [`V7/${target}`, `V7 / ${target}`],
           spellingSensitive: true,
           explanation: `The secondary dominant of ${target} in ${key} major is written ${secDom.romanNumeral}.`,
+          templateId: 'tonal_sec_dom',
+          variantKey: `key:${key}|target:${target}`,
+          subtopic,
+          answerType: 'spelling_text',
+          learningObjective: 'Identify and write secondary dominant Roman numerals.',
+          sourceReferences: ['Kostka & Payne Tonal Harmony Ch. 16'],
         };
       } else {
         // Cadences
         const cadenceKeys = Object.keys(CADENCE_DEFINITIONS) as (keyof typeof CADENCE_DEFINITIONS)[];
         const selectedType = sample(cadenceKeys);
         const def = CADENCE_DEFINITIONS[selectedType];
+        const subtopic = 'Cadence Identification';
         return {
           id: `tonal_cad_${seed}`,
           category: 'tonal',
           difficulty: 4,
-          skillId: 'a3',
-          topic: 'Cadence Identification',
+          skillId: getSkillIdForSubtopic(subtopic) ?? 'a3',
+          topic: subtopic,
           prompt: `Which cadence type is characterized by ${def.description.toLowerCase()}?`,
           inputType: 'multiple_choice',
           options: cadenceKeys,
           correctAnswer: selectedType,
           spellingSensitive: false,
           explanation: `${selectedType}: ${def.description}`,
+          templateId: 'tonal_cadence',
+          variantKey: `cadence:${selectedType}`,
+          subtopic,
+          answerType: 'multiple_choice',
+          learningObjective: 'Classify standard cadential resolutions in tonal harmony.',
+          sourceReferences: ['Kostka & Payne Tonal Harmony Ch. 10'],
         };
       }
     }
 
     case 'form': {
       const dbItem = FORMAL_ANALYSIS_DATABASE[Math.floor(rng() * FORMAL_ANALYSIS_DATABASE.length)];
+      const subtopic = 'Formal Analysis';
       return {
         id: `form_${seed}`,
         category: 'form',
         difficulty,
-        skillId: 't5',
-        topic: 'Formal Analysis',
+        skillId: getSkillIdForSubtopic(subtopic) ?? 't5',
+        topic: subtopic,
         prompt: dbItem.prompt,
         inputType: 'multiple_choice',
         options: dbItem.options,
         correctAnswer: dbItem.correctAnswer,
         spellingSensitive: false,
         explanation: dbItem.explanation,
+        templateId: 'form_analysis',
+        variantKey: `prompt:${dbItem.prompt}`,
+        subtopic,
+        answerType: 'multiple_choice',
+        learningObjective: 'Analyze formal structural components, sonata sections, and rondo forms.',
+        sourceReferences: ['Caplin Classical Form Ch. 1-4'],
       };
     }
 
@@ -194,13 +329,14 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
       const tonic = sample(['C', 'D', 'E', 'F', 'G', 'A', 'Bb']);
       const scale = buildScale(tonic, chosenMode);
       const def = SCALE_DEFINITIONS[chosenMode];
+      const subtopic = 'Modes & Symmetrical Scales';
 
       return {
         id: `mode_${seed}`,
         category: 'modes',
         difficulty,
-        skillId: 't4',
-        topic: 'Modes & Symmetrical Scales',
+        skillId: getSkillIdForSubtopic(subtopic) ?? 't4',
+        topic: subtopic,
         prompt: `Identify the scale/mode formula for ${chosenMode}:`,
         inputType: 'multiple_choice',
         options: [
@@ -212,6 +348,12 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
         correctAnswer: def.formula,
         spellingSensitive: false,
         explanation: `${chosenMode} has the formula ${def.formula}. Pitch classes starting on ${tonic}: [${scale.pitchClasses.join(', ')}].`,
+        templateId: 'mode_scale_id',
+        variantKey: `mode:${chosenMode}|tonic:${tonic}`,
+        subtopic,
+        answerType: 'multiple_choice',
+        learningObjective: 'Identify scale formulas for diatonic modes and symmetrical scales.',
+        sourceReferences: ['Kostka & Payne Tonal Harmony Ch. 28'],
       };
     }
 
@@ -221,53 +363,74 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
         const rawPcs = Array.from({ length: 3 + Math.floor(rng() * 2) }, () => Math.floor(rng() * 12));
         const prime = getPrimeForm(rawPcs);
         const primeStr = `[${prime.join(', ')}]`;
+        const subtopic = 'Prime Form Calculation';
 
         return {
           id: `set_prime_${seed}`,
           category: 'setTheory',
           difficulty,
-          skillId: 't1',
-          topic: 'Prime Form Calculation',
+          skillId: getSkillIdForSubtopic(subtopic) ?? 't1',
+          topic: subtopic,
           prompt: `Calculate the Prime Form for the pitch-class set [${rawPcs.join(', ')}]:`,
           inputType: 'pitch_class_array',
           correctAnswer: primeStr,
           acceptableAnswers: [primeStr, `[${prime.join(',')}]`, prime.join(' '), prime.join(',')],
           spellingSensitive: false,
           explanation: `The prime form (Forte/Rahn standard) starting at 0 with smallest left-packed intervals is ${primeStr}.`,
+          templateId: 'set_prime_form',
+          variantKey: `prime:${prime.join(',')}`,
+          subtopic,
+          answerType: 'pitch_class_array',
+          learningObjective: 'Calculate Forte/Rahn prime forms for pitch-class sets.',
+          sourceReferences: ['Straus Introduction to Post-Tonal Theory Ch. 2'],
         };
       } else if (difficulty === 3) {
         // Interval class vector
         const rawPcs = Array.from({ length: 3 + Math.floor(rng() * 2) }, () => Math.floor(rng() * 12));
         const vec = getIntervalVector(rawPcs);
         const vecStr = formatIntervalVector(vec);
+        const subtopic = 'Interval-Class Vector';
         return {
           id: `set_icv_${seed}`,
           category: 'setTheory',
           difficulty: 3,
-          skillId: 't2',
-          topic: 'Interval-Class Vector',
+          skillId: getSkillIdForSubtopic(subtopic) ?? 't2',
+          topic: subtopic,
           prompt: `Calculate the Interval-Class Vector <ic1 ic2 ic3 ic4 ic5 ic6> for set [${rawPcs.join(', ')}]:`,
           inputType: 'vector_text',
           correctAnswer: vecStr,
           acceptableAnswers: [vecStr, `<${vec.join('')}>`, vec.join(' '), vec.join(',')],
           spellingSensitive: false,
           explanation: `The interval-class vector counts interval classes 1 through 6: ${vecStr}.`,
+          templateId: 'set_interval_vector',
+          variantKey: `icv:${vecStr}`,
+          subtopic,
+          answerType: 'vector_text',
+          learningObjective: 'Derive interval-class vectors <ic1..ic6> for pitch-class sets.',
+          sourceReferences: ['Straus Introduction to Post-Tonal Theory Ch. 2'],
         };
       } else {
         // Z-related sets
         const pair = sample(Z_RELATED_PAIRS);
+        const subtopic = 'Z-Related Sets';
         return {
           id: `set_z_${seed}`,
           category: 'setTheory',
           difficulty: 4,
-          skillId: 't1',
-          topic: 'Z-Related Sets',
+          skillId: getSkillIdForSubtopic(subtopic) ?? 't1',
+          topic: subtopic,
           prompt: `Pitch class sets ${pair.pair[0]} (${pair.primeA.join(',')}) and ${pair.pair[1]} (${pair.primeB.join(',')}) share interval vector ${pair.icv}. What term describes pairs that share an interval vector but are not equivalent under Tn/TnI?`,
           inputType: 'multiple_choice',
           options: ['Z-related sets', 'Inversional equivalences', 'Homometric rows', 'Hexachordal complements'],
           correctAnswer: 'Z-related sets',
           spellingSensitive: false,
           explanation: 'Z-related sets (named by Allen Forte) share the exact same interval-class vector without being Tn or TnI equivalent.',
+          templateId: 'set_z_related',
+          variantKey: `zpair:${pair.pair.join('/')}`,
+          subtopic,
+          answerType: 'multiple_choice',
+          learningObjective: 'Identify properties of Z-related non-isomorphic pitch class sets.',
+          sourceReferences: ['Straus Introduction to Post-Tonal Theory Ch. 3'],
         };
       }
     }
@@ -279,19 +442,26 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
       const index = Math.floor(rng() * 12);
       const transformed = getRowTransformation(p0, form, index);
       const firstThree = transformed.slice(0, 3).join(', ');
+      const subtopic = '12-Tone Serial Transformations';
 
       return {
         id: `tt_${seed}`,
         category: 'twelveTone',
         difficulty,
-        skillId: 't3',
-        topic: '12-Tone Serial Transformations',
+        skillId: getSkillIdForSubtopic(subtopic) ?? 't3',
+        topic: subtopic,
         prompt: `Given P0 = [0, 11, 7, 8, 2, 1, 9, 10, 4, 3, 5, 6], what are the first 3 pitch classes of ${form}${index}?`,
         inputType: 'pitch_class_array',
         correctAnswer: firstThree,
         acceptableAnswers: [firstThree, transformed.slice(0, 3).join(' '), transformed.slice(0, 3).join('')],
         spellingSensitive: false,
         explanation: `${form}${index} yields row starting with pitch classes [${firstThree}]. Full row: [${transformed.join(', ')}].`,
+        templateId: 'twelve_tone_serial',
+        variantKey: `form:${form}|index:${index}`,
+        subtopic,
+        answerType: 'pitch_class_array',
+        learningObjective: 'Compute 12-tone serial row transformations (P, I, R, RI).',
+        sourceReferences: ['Straus Introduction to Post-Tonal Theory Ch. 6'],
       };
     }
 
@@ -300,35 +470,49 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
         const meterNames = Object.keys(COMMON_METERS);
         const mKey = sample(meterNames);
         const mDef = COMMON_METERS[mKey];
+        const subtopic = 'Meter Classification';
         return {
           id: `rhythm_meter_${seed}`,
           category: 'rhythm',
           difficulty,
-          skillId: 't6',
-          topic: 'Meter Classification',
+          skillId: getSkillIdForSubtopic(subtopic) ?? 't6',
+          topic: subtopic,
           prompt: `Classify the time signature ${mKey}:`,
           inputType: 'multiple_choice',
           options: ['simple', 'compound', 'asymmetric', 'mixed'],
           correctAnswer: mDef.type,
           spellingSensitive: false,
           explanation: `${mKey} is a ${mDef.description.toLowerCase()}.`,
+          templateId: 'rhythm_meter_class',
+          variantKey: `meter:${mKey}`,
+          subtopic,
+          answerType: 'multiple_choice',
+          learningObjective: 'Classify simple, compound, asymmetric, and mixed meter time signatures.',
+          sourceReferences: ['Read Music Notation Ch. 5'],
         };
       } else {
         const tupletNames = Object.keys(COMMON_TUPLETS);
         const tKey = sample(tupletNames);
         const tDef = COMMON_TUPLETS[tKey];
+        const subtopic = 'Tuplet Ratios';
         return {
           id: `rhythm_tuplet_${seed}`,
           category: 'rhythm',
           difficulty,
-          skillId: 't6',
-          topic: 'Tuplet Ratios',
+          skillId: getSkillIdForSubtopic(subtopic) ?? 't6',
+          topic: subtopic,
           prompt: `What is the note-ratio for a ${tKey}?`,
           inputType: 'spelling_text',
           correctAnswer: tDef.ratio,
           acceptableAnswers: [tDef.ratio, `${tDef.numNotes}:${tDef.inTimeOf}`, `${tDef.numNotes} in ${tDef.inTimeOf}`],
           spellingSensitive: true,
           explanation: `A ${tKey} plays ${tDef.numNotes} notes in the time of ${tDef.inTimeOf} (${tDef.ratio}).`,
+          templateId: 'rhythm_tuplet_ratio',
+          variantKey: `tuplet:${tKey}`,
+          subtopic,
+          answerType: 'spelling_text',
+          learningObjective: 'Determine numerical ratio notations for tuplet divisions.',
+          sourceReferences: ['Read Music Notation Ch. 6'],
         };
       }
     }
@@ -356,19 +540,26 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
       ];
 
       const q = sample(questions);
+      const subtopic = '20th-Century Post-Tonal Concepts';
 
       return {
         id: `post_tonal_${seed}`,
         category: 'postTonal',
         difficulty,
-        skillId: 't5',
-        topic: '20th-Century Post-Tonal Concepts',
+        skillId: getSkillIdForSubtopic(subtopic) ?? 't5',
+        topic: subtopic,
         prompt: q.prompt,
         inputType: 'multiple_choice',
         options: q.options,
         correctAnswer: q.correct,
         spellingSensitive: false,
         explanation: q.explanation,
+        templateId: 'post_tonal_concepts',
+        variantKey: `concept:${q.correct}`,
+        subtopic,
+        answerType: 'multiple_choice',
+        learningObjective: 'Identify 20th-century harmonic concepts including polychords, quartal harmony, and tone clusters.',
+        sourceReferences: ['Kostka Materials and Techniques of Twentieth-Century Music Ch. 4'],
       };
     }
 
