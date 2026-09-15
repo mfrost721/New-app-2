@@ -23,6 +23,11 @@ describe('Pitch Class & Set Theory Edge Cases', () => {
     expect(() => noteToPitchClass('UNKNOWN')).toThrow('Invalid note name or integer');
   });
 
+  it('rejects partial numeric tokens in noteToPitchClass', () => {
+    expect(() => noteToPitchClass('12abc')).toThrow('Invalid note name or integer');
+    expect(() => noteToPitchClass('7xyz')).toThrow('Invalid note name or integer');
+  });
+
   it('parses negative octave note names', () => {
     expect(noteToPitchClass('C-1')).toBe(0);
     expect(noteToPitchClass('F#-1')).toBe(6);
