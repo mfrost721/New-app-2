@@ -45,6 +45,8 @@ export interface DrillQuestion {
   acceptableAnswers?: string[]; // Alternative valid answers (e.g., enharmonic or alternate formatting)
   explanation: string;
   hint?: string;
+  poolSize?: number;
+  isReview?: boolean;
 }
 
 export interface AnswerValidationResult {
