@@ -77,7 +77,16 @@ export function migrateUserStore(raw: unknown): UserStoreState {
   const parsed = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
   const incomingSkills = Array.isArray(parsed.skills) ? parsed.skills as SkillItem[] : [];
   const byId = new Map(incomingSkills.filter((skill) => skill && typeof skill.id === 'string').map((skill) => [skill.id, skill]));
+  const initialSkillIds = new Set(INITIAL_SKILLS.map((s) => s.id));
   const skills = INITIAL_SKILLS.map((skill) => byId.get(skill.id) ?? skill);
+
+  // Preserve newly or custom registered skills from incoming store that are not in INITIAL_SKILLS
+  for (const skill of incomingSkills) {
+    if (skill && typeof skill.id === 'string' && !initialSkillIds.has(skill.id)) {
+      skills.push(skill);
+    }
+  }
+
   const history = Array.isArray(parsed.history) ? parsed.history as PracticeAttempt[] : [];
 
   return {
