@@ -165,14 +165,18 @@ export default function HomeDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {prescription.recommendations.map((rec, idx) => (
-            <div key={idx} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <Link
+              key={`${rec.skillId ?? rec.topic}-${idx}`}
+              href={rec.href}
+              className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 hover:border-amber-500/40 transition-colors block"
+            >
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 uppercase font-semibold">{rec.category}</span>
                 <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold">{rec.allocatedMinutes} min</span>
               </div>
               <div className="font-bold text-slate-100 text-sm">{rec.topic}</div>
               <p className="text-xs text-slate-400">{rec.reason}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

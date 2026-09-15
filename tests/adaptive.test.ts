@@ -93,6 +93,7 @@ describe('Adaptive Learning Engine & Mastery', () => {
     };
 
     const baseStore = {
+      schemaVersion: 3,
       examDate: '2026-12-08',
       isRoadMode: false,
       academicStreak: 5,

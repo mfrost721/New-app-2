@@ -21,6 +21,8 @@ describe('Adaptive Practice Prescription Engine', () => {
     expect(rx.recommendations[0].topic).toBe('Scales');
     expect(rx.recommendations[1].topic).toBe('Sets');
     expect(rx.recommendations[2].topic).toBe('Vectors');
+    expect(rx.recommendations[0].href).toBe('/piano?skill=p1');
+    expect(rx.recommendations[1].href).toBe('/theory?skill=t1');
   });
 
   it('filters out Class Piano IV skills when road mode is active', () => {
@@ -37,6 +39,7 @@ describe('Adaptive Practice Prescription Engine', () => {
     expect(rx.recommendations.length).toBe(1);
     expect(rx.recommendations[0].topic).toBe('Pitch-Class Set Theory');
     expect(rx.recommendations[0].allocatedMinutes).toBe(15);
+    expect(rx.recommendations[0].href).toBe('/theory?skill=t1');
   });
 
   it('correctly distributes minutes across recommendations', () => {

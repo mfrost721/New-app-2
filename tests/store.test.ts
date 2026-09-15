@@ -4,8 +4,10 @@ import {
   saveUserStore,
   updateExamDate,
   recordPracticeAttemptInStore,
+  migrateUserStore,
   INITIAL_STATE,
   INITIAL_SKILLS,
+  STORE_SCHEMA_VERSION,
   UserStoreState,
 } from '../lib/storage/store';
 import { PracticeAttempt } from '../lib/adaptive/mastery';
@@ -57,7 +59,7 @@ describe('Storage and UserStore Engine', () => {
   });
 
   it('handles corrupted JSON in localStorage gracefully without throwing', () => {
-    localStorageMock.setItem('frost_music_lab_user_store_v2', 'invalid{json:');
+    localStorageMock.setItem('frost_music_lab_user_store_v3', 'invalid{json:');
     const store = loadUserStore();
     expect(store.academicStreak).toBe(INITIAL_STATE.academicStreak);
     expect(store.skills.length).toBe(INITIAL_SKILLS.length);
@@ -191,5 +193,52 @@ describe('Storage and UserStore Engine', () => {
     const updated = recordPracticeAttemptInStore(state, newAttempt);
     expect(updated.history.length).toBe(100);
     expect(updated.history[0].skillId).toBe('t1');
+  });
+
+  it('migrates v2 payloads onto schema v3 and backfills missing skills', () => {
+    const migrated = migrateUserStore({
+      examDate: '2026-11-01',
+      academicStreak: 4,
+      skills: [{ id: 't1', category: 'Theory IV', topic: 'Old', mastery: 22, totalAttempts: 3, correctAttempts: 1, lastPracticed: '', recentLatencyMs: [], errorHistory: [] }],
+    });
+    expect(migrated.schemaVersion).toBe(STORE_SCHEMA_VERSION);
+    expect(migrated.examDate).toBe('2026-11-01');
+    expect(migrated.academicStreak).toBe(4);
+    expect(migrated.skills.length).toBe(INITIAL_SKILLS.length);
+    expect(migrated.skills.find((s) => s.id === 't1')?.mastery).toBe(22);
+    expect(migrated.skills.find((s) => s.id === 'a7')?.topic).toBe('Sight Singing Accuracy');
+  });
+
+  it('loads a v2 localStorage blob and rewrites it as v3', () => {
+    localStorageMock.setItem('frost_music_lab_user_store_v2', JSON.stringify({
+      examDate: '2026-10-01',
+      pianoStreak: 2,
+      skills: INITIAL_SKILLS,
+      history: [],
+    }));
+    const loaded = loadUserStore();
+    expect(loaded.schemaVersion).toBe(3);
+    expect(loaded.examDate).toBe('2026-10-01');
+    expect(loaded.pianoStreak).toBe(2);
+    expect(localStorageMock.getItem('frost_music_lab_user_store_v3')).toContain('"schemaVersion":3');
+  });
+
+  it('logs self-rubric attempts without changing mastery or streaks', () => {
+    const attempt: PracticeAttempt = {
+      skillId: 't1',
+      isCorrect: true,
+      responseTimeMs: 800,
+      date: '2026-03-02T12:00:00.000Z',
+      countsTowardMastery: false,
+    };
+    const updated = recordPracticeAttemptInStore({
+      ...INITIAL_STATE,
+      academicStreak: 4,
+      lastAcademicDate: '2026-03-01',
+    }, attempt, 5);
+    expect(updated.history[0].countsTowardMastery).toBe(false);
+    expect(updated.academicStreak).toBe(4);
+    expect(updated.totalMinutesStudied).toBe(0);
+    expect(updated.skills.find((s) => s.id === 't1')?.mastery).toBe(0);
   });
 });

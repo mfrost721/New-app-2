@@ -8,12 +8,12 @@ import KeyboardVisualizer from '@/components/KeyboardVisualizer';
 import { getNormalOrder, getPrimeForm, getIntervalVector, formatIntervalVector } from '@/lib/music/pitchClass';
 import { buildScale, SCALE_DEFINITIONS, ModeName } from '@/lib/music/scalesAndModes';
 import {
-  generateDrillQuestion,
   validateDrillAnswer,
   DrillCategory,
   DrillDifficulty,
   AnswerValidationResult,
 } from '@/lib/music/drillEngine';
+import { generateUnique } from '@/lib/practice/questionBank';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
 import { Brain, Check, Clock, Sparkles, HelpCircle, ArrowRight, RotateCcw } from 'lucide-react';
 
@@ -41,7 +41,11 @@ export default function TheoryPage() {
 
   // Current Drill Question generated deterministically
   const currentDrillQuestion = useMemo(() => {
-    return generateDrillQuestion(drillCategory, drillDifficulty, seedInput);
+    return generateUnique({
+      category: drillCategory,
+      difficulty: drillDifficulty,
+      seed: seedInput,
+    });
   }, [drillCategory, drillDifficulty, seedInput]);
 
   const togglePc = (pc: number) => {

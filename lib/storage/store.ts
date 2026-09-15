@@ -6,6 +6,7 @@
 import { SkillItem, PracticeAttempt, updateSkillMastery } from '../adaptive/mastery';
 
 export interface UserStoreState {
+  schemaVersion: number;
   examDate: string; // ISO date format, default 2026-12-08
   isRoadMode: boolean; // Phone-only / Road mode flag
   academicStreak: number;
@@ -17,7 +18,9 @@ export interface UserStoreState {
   history: PracticeAttempt[];
 }
 
-const STORAGE_KEY = 'frost_music_lab_user_store_v2';
+export const STORE_SCHEMA_VERSION = 3;
+const STORAGE_KEY_V3 = 'frost_music_lab_user_store_v3';
+const STORAGE_KEY_V2 = 'frost_music_lab_user_store_v2';
 
 export const INITIAL_SKILLS: SkillItem[] = [
   // Theory IV
@@ -58,6 +61,7 @@ export const INITIAL_SKILLS: SkillItem[] = [
 ];
 
 export const INITIAL_STATE: UserStoreState = {
+  schemaVersion: STORE_SCHEMA_VERSION,
   examDate: '2026-12-08',
   isRoadMode: false,
   academicStreak: 0,
@@ -69,14 +73,32 @@ export const INITIAL_STATE: UserStoreState = {
   history: [],
 };
 
+export function migrateUserStore(raw: unknown): UserStoreState {
+  const parsed = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
+  const incomingSkills = Array.isArray(parsed.skills) ? parsed.skills as SkillItem[] : [];
+  const byId = new Map(incomingSkills.filter((skill) => skill && typeof skill.id === 'string').map((skill) => [skill.id, skill]));
+  const skills = INITIAL_SKILLS.map((skill) => byId.get(skill.id) ?? skill);
+  const history = Array.isArray(parsed.history) ? parsed.history as PracticeAttempt[] : [];
+
+  return {
+    ...INITIAL_STATE,
+    ...parsed,
+    schemaVersion: STORE_SCHEMA_VERSION,
+    skills,
+    history,
+  };
+}
+
 export function loadUserStore(): UserStoreState {
   if (typeof window === 'undefined') return INITIAL_STATE;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const rawV3 = localStorage.getItem(STORAGE_KEY_V3);
+    const rawV2 = rawV3 ? null : localStorage.getItem(STORAGE_KEY_V2);
+    const raw = rawV3 ?? rawV2;
     if (!raw) return INITIAL_STATE;
-    const parsed = JSON.parse(raw);
-    const skills = Array.isArray(parsed?.skills) ? parsed.skills : INITIAL_SKILLS;
-    return { ...INITIAL_STATE, ...parsed, skills };
+    const migrated = migrateUserStore(JSON.parse(raw));
+    if (!rawV3) saveUserStore(migrated);
+    return migrated;
   } catch {
     return INITIAL_STATE;
   }
@@ -85,7 +107,7 @@ export function loadUserStore(): UserStoreState {
 export function saveUserStore(state: UserStoreState): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY_V3, JSON.stringify({ ...state, schemaVersion: STORE_SCHEMA_VERSION }));
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
@@ -107,6 +129,16 @@ export function recordPracticeAttemptInStore(
 ): UserStoreState {
   const targetSkill = currentState.skills.find(s => s.id === attempt.skillId);
   if (!targetSkill) return currentState;
+
+  if (attempt.countsTowardMastery === false) {
+    const loggedState: UserStoreState = {
+      ...currentState,
+      schemaVersion: STORE_SCHEMA_VERSION,
+      history: [attempt, ...currentState.history.slice(0, 99)],
+    };
+    saveUserStore(loggedState);
+    return loggedState;
+  }
 
   const updatedSkill = updateSkillMastery(targetSkill, attempt);
   const newSkills = currentState.skills.map(s => (s.id === attempt.skillId ? updatedSkill : s));
@@ -151,6 +183,7 @@ export function recordPracticeAttemptInStore(
 
   const updatedState: UserStoreState = {
     ...currentState,
+    schemaVersion: STORE_SCHEMA_VERSION,
     academicStreak,
     pianoStreak,
     lastAcademicDate: newLastAcademicDate,

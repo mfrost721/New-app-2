@@ -86,6 +86,7 @@ describe('Formal Analysis Database', () => {
 
 describe('Streak Behavior & Protection', () => {
   const initialTestState: UserStoreState = {
+    schemaVersion: 3,
     examDate: '2026-12-08',
     isRoadMode: false,
     academicStreak: 5,
