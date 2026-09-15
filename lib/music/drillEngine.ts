@@ -11,7 +11,7 @@
  * - 20th-century / post-tonal concepts (polychords, quartal harmony, tone clusters)
  */
 
-import { noteToPitchClass, pitchClassToNote, getPrimeForm, getIntervalVector, formatIntervalVector, Z_RELATED_PAIRS } from './pitchClass';
+import { noteToPitchClass, pitchClassToNote, getPrimeForm, getIntervalVector, formatIntervalVector, normalizeAccidentals, Z_RELATED_PAIRS } from './pitchClass';
 import { buildScale, ModeName, SCALE_DEFINITIONS } from './scalesAndModes';
 import { spellChord, KEY_SIGNATURES, CADENCE_DEFINITIONS, generateSecondaryDominant, TriadQuality, SeventhQuality } from './chordsAndHarmony';
 import { getRowTransformation } from './twelveTone';
@@ -146,7 +146,7 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
           prompt: `In the key of ${key} major, what is the Roman numeral for the dominant 7th of ${target}?`,
           inputType: 'spelling_text',
           correctAnswer: `V7/${target}`,
-          acceptableAnswers: [`V7/${target}`, `V7 / ${target}`, `V/${target}`],
+          acceptableAnswers: [`V7/${target}`, `V7 / ${target}`],
           spellingSensitive: true,
           explanation: `The secondary dominant of ${target} in ${key} major is written ${secDom.romanNumeral}.`,
         };
@@ -378,48 +378,65 @@ export function generateDrillQuestion(category: DrillCategory, difficulty: Drill
 }
 
 /**
- * Validates a user's answer against expected answer and acceptable alternatives.
- * Handles enharmonic equivalence vs strict spelling sensitivity.
+ * Normalizes a string by trimming whitespace and converting Unicode accidentals.
  */
-export function validateDrillAnswer(question: DrillQuestion, userAnswer: string): AnswerValidationResult {
-  const cleanUser = userAnswer.trim().toLowerCase();
+function cleanAnswerString(str: string): string {
+  return normalizeAccidentals(str.trim());
+}
 
-  // 1. Direct match with correct answer or acceptable alternatives
-  const allAcceptable = [question.correctAnswer, ...(question.acceptableAnswers || [])].map(a => a.trim().toLowerCase());
-  if (allAcceptable.includes(cleanUser)) {
-    return {
-      isCorrect: true,
-      spellingCorrect: true,
-      enharmonicCorrect: true,
-      userAnswer,
-      expectedAnswer: question.correctAnswer,
-      explanation: `Correct! ${question.explanation}`,
-    };
+/**
+ * Parses a vector string into array of integers.
+ * Must contain exactly 6 non-negative integer counts.
+ */
+function parseVector(str: string): number[] | null {
+  const cleaned = cleanAnswerString(str);
+  // Match bracketed or unbracketed vector tokens
+  const body = cleaned.replace(/^[<\[\(\s]*/, '').replace(/[>\]\)\s]*$/, '');
+  const tokens = body.split(/[\s,]+/).filter(Boolean);
+
+  if (tokens.length !== 6) return null;
+
+  const numbers: number[] = [];
+  for (const t of tokens) {
+    if (!/^\d+$/.test(t)) return null;
+    const val = parseInt(t, 10);
+    if (isNaN(val) || val < 0) return null;
+    numbers.push(val);
   }
 
-  // 2. If question is spelling sensitive, reject enharmonic variations that don't match exactly
-  if (question.spellingSensitive) {
+  return numbers;
+}
+
+/**
+ * Validates a vector_text input question.
+ * Requires exactly 6 non-negative integer counts and exact count matching without modulo 12 reduction.
+ */
+function validateVectorAnswer(question: DrillQuestion, userAnswer: string): AnswerValidationResult {
+  const userVec = parseVector(userAnswer);
+  if (!userVec) {
     return {
       isCorrect: false,
       spellingCorrect: false,
-      enharmonicCorrect: checkEnharmonicMatch(userAnswer, question.correctAnswer),
+      enharmonicCorrect: false,
       userAnswer,
       expectedAnswer: question.correctAnswer,
-      explanation: `Incorrect spelling. Expected exact spelling "${question.correctAnswer}". ${question.explanation}`,
+      explanation: `Malformed interval vector. Expected 6 non-negative integer counts (e.g., "<1 0 1 1 0 0>"). ${question.explanation}`,
     };
   }
 
-  // 3. For pitch-class / array / non-spelling-sensitive input, test pitch-class / enharmonic equivalence
-  const isEnharmonic = checkEnharmonicMatch(userAnswer, question.correctAnswer);
-  if (isEnharmonic) {
-    return {
-      isCorrect: true,
-      spellingCorrect: false,
-      enharmonicCorrect: true,
-      userAnswer,
-      expectedAnswer: question.correctAnswer,
-      explanation: `Correct (enharmonically equivalent)! Note: Standard spelling is "${question.correctAnswer}". ${question.explanation}`,
-    };
+  const allAcceptable = [question.correctAnswer, ...(question.acceptableAnswers || [])];
+  for (const acc of allAcceptable) {
+    const accVec = parseVector(acc);
+    if (accVec && userVec.length === accVec.length && userVec.every((val, idx) => val === accVec[idx])) {
+      return {
+        isCorrect: true,
+        spellingCorrect: true,
+        enharmonicCorrect: true,
+        userAnswer,
+        expectedAnswer: question.correctAnswer,
+        explanation: `Correct! ${question.explanation}`,
+      };
+    }
   }
 
   return {
@@ -433,22 +450,209 @@ export function validateDrillAnswer(question: DrillQuestion, userAnswer: string)
 }
 
 /**
- * Helper to check if two note or pitch class strings are enharmonically equivalent.
+ * Helper to parse tokens from a string for pitch-class / sequence / note validation.
  */
-function checkEnharmonicMatch(input: string, expected: string): boolean {
-  try {
-    const parsePcs = (str: string): number[] => {
-      // Extract numbers or note names from brackets/commas/spaces
-      const tokens = str.replace(/[\[\]<>\(\)]/g, ' ').split(/[\s,]+/).filter(Boolean);
-      return tokens.map(t => noteToPitchClass(t));
+function parseTokens(str: string): string[] {
+  const cleaned = cleanAnswerString(str);
+  return cleaned
+    .replace(/[\[\]<>\(\)]/g, ' ')
+    .split(/[\s,]+/)
+    .filter(Boolean);
+}
+
+/**
+ * Validates pitch_class_array questions.
+ * Preserves sequence order for row answers / ordered answers.
+ */
+function validatePitchClassArrayAnswer(question: DrillQuestion, userAnswer: string): AnswerValidationResult {
+  const userTokens = parseTokens(userAnswer);
+  if (userTokens.length === 0) {
+    return {
+      isCorrect: false,
+      spellingCorrect: false,
+      enharmonicCorrect: false,
+      userAnswer,
+      expectedAnswer: question.correctAnswer,
+      explanation: `Invalid input. Expected pitch classes or note names. ${question.explanation}`,
     };
+  }
 
-    const userPcs = parsePcs(input);
-    const expectedPcs = parsePcs(expected);
-
-    if (userPcs.length !== expectedPcs.length || userPcs.length === 0) return false;
-    return userPcs.every((pc, idx) => pc === expectedPcs[idx]);
+  // Attempt to parse user tokens into pitch class integers
+  let userPcs: number[];
+  try {
+    userPcs = userTokens.map(t => noteToPitchClass(t));
   } catch {
-    return false;
+    return {
+      isCorrect: false,
+      spellingCorrect: false,
+      enharmonicCorrect: false,
+      userAnswer,
+      expectedAnswer: question.correctAnswer,
+      explanation: `Invalid pitch class or note token. ${question.explanation}`,
+    };
+  }
+
+  const allAcceptable = [question.correctAnswer, ...(question.acceptableAnswers || [])];
+
+  for (const acc of allAcceptable) {
+    const accTokens = parseTokens(acc);
+    let accPcs: number[];
+    try {
+      accPcs = accTokens.map(t => noteToPitchClass(t));
+    } catch {
+      continue;
+    }
+
+    if (userPcs.length === accPcs.length && userPcs.every((pc, idx) => pc === accPcs[idx])) {
+      const isExactSpelling = userTokens.join(' ').toLowerCase() === accTokens.join(' ').toLowerCase();
+      return {
+        isCorrect: true,
+        spellingCorrect: isExactSpelling,
+        enharmonicCorrect: true,
+        userAnswer,
+        expectedAnswer: question.correctAnswer,
+        explanation: isExactSpelling
+          ? `Correct! ${question.explanation}`
+          : `Correct (enharmonically equivalent)! Note: Standard spelling is "${question.correctAnswer}". ${question.explanation}`,
+      };
+    }
+  }
+
+  return {
+    isCorrect: false,
+    spellingCorrect: false,
+    enharmonicCorrect: false,
+    userAnswer,
+    expectedAnswer: question.correctAnswer,
+    explanation: `Incorrect. Expected "${question.correctAnswer}". ${question.explanation}`,
+  };
+}
+
+/**
+ * Validates spelling_text questions.
+ * Preserves Roman-numeral case, chord quality, inversion, and requested sevenths.
+ */
+function validateSpellingTextAnswer(question: DrillQuestion, userAnswer: string): AnswerValidationResult {
+  const cleanedUser = cleanAnswerString(userAnswer);
+  const normalizedUserWs = cleanedUser.replace(/\s+/g, ' ');
+
+  const allAcceptable = [question.correctAnswer, ...(question.acceptableAnswers || [])];
+
+  // Direct case-sensitive & whitespace-normalized comparison
+  for (const acc of allAcceptable) {
+    const cleanedAcc = cleanAnswerString(acc).replace(/\s+/g, ' ');
+    if (normalizedUserWs === cleanedAcc) {
+      return {
+        isCorrect: true,
+        spellingCorrect: true,
+        enharmonicCorrect: true,
+        userAnswer,
+        expectedAnswer: question.correctAnswer,
+        explanation: `Correct! ${question.explanation}`,
+      };
+    }
+  }
+
+  // Case-insensitive direct comparison ONLY if question is not spelling sensitive AND not Roman numeral / chord quality sensitive
+  // Note: For spellingSensitive questions, case or exact spelling matters.
+  if (!question.spellingSensitive) {
+    const userLower = normalizedUserWs.toLowerCase();
+    for (const acc of allAcceptable) {
+      const accLower = cleanAnswerString(acc).replace(/\s+/g, ' ').toLowerCase();
+      if (userLower === accLower) {
+        return {
+          isCorrect: true,
+          spellingCorrect: true,
+          enharmonicCorrect: true,
+          userAnswer,
+          expectedAnswer: question.correctAnswer,
+          explanation: `Correct! ${question.explanation}`,
+        };
+      }
+    }
+
+    // Attempt pitch-class / enharmonic equivalence check for note sequence spelling questions
+    const userTokens = parseTokens(userAnswer);
+    try {
+      const userPcs = userTokens.map(t => noteToPitchClass(t));
+      for (const acc of allAcceptable) {
+        const accTokens = parseTokens(acc);
+        const accPcs = accTokens.map(t => noteToPitchClass(t));
+        if (userPcs.length === accPcs.length && userPcs.length > 0 && userPcs.every((pc, idx) => pc === accPcs[idx])) {
+          return {
+            isCorrect: true,
+            spellingCorrect: false,
+            enharmonicCorrect: true,
+            userAnswer,
+            expectedAnswer: question.correctAnswer,
+            explanation: `Correct (enharmonically equivalent)! Note: Standard spelling is "${question.correctAnswer}". ${question.explanation}`,
+          };
+        }
+      }
+    } catch {
+      // Not note tokens
+    }
+  }
+
+  return {
+    isCorrect: false,
+    spellingCorrect: false,
+    enharmonicCorrect: false,
+    userAnswer,
+    expectedAnswer: question.correctAnswer,
+    explanation: question.spellingSensitive
+      ? `Incorrect spelling. Expected exact spelling "${question.correctAnswer}". ${question.explanation}`
+      : `Incorrect. Expected "${question.correctAnswer}". ${question.explanation}`,
+  };
+}
+
+/**
+ * Validates multiple_choice questions.
+ */
+function validateMultipleChoiceAnswer(question: DrillQuestion, userAnswer: string): AnswerValidationResult {
+  const cleanedUser = cleanAnswerString(userAnswer);
+
+  const allAcceptable = [question.correctAnswer, ...(question.acceptableAnswers || [])];
+
+  for (const acc of allAcceptable) {
+    const cleanedAcc = cleanAnswerString(acc);
+    if (cleanedUser === cleanedAcc || cleanedUser.toLowerCase() === cleanedAcc.toLowerCase()) {
+      return {
+        isCorrect: true,
+        spellingCorrect: true,
+        enharmonicCorrect: true,
+        userAnswer,
+        expectedAnswer: question.correctAnswer,
+        explanation: `Correct! ${question.explanation}`,
+      };
+    }
+  }
+
+  return {
+    isCorrect: false,
+    spellingCorrect: false,
+    enharmonicCorrect: false,
+    userAnswer,
+    expectedAnswer: question.correctAnswer,
+    explanation: `Incorrect. Expected "${question.correctAnswer}". ${question.explanation}`,
+  };
+}
+
+/**
+ * Validates a user's answer against expected answer and acceptable alternatives.
+ * Dispatches to input-type-specific validators.
+ */
+export function validateDrillAnswer(question: DrillQuestion, userAnswer: string): AnswerValidationResult {
+  switch (question.inputType) {
+    case 'vector_text':
+      return validateVectorAnswer(question, userAnswer);
+    case 'pitch_class_array':
+      return validatePitchClassArrayAnswer(question, userAnswer);
+    case 'spelling_text':
+      return validateSpellingTextAnswer(question, userAnswer);
+    case 'multiple_choice':
+      return validateMultipleChoiceAnswer(question, userAnswer);
+    default:
+      return validateSpellingTextAnswer(question, userAnswer);
   }
 }

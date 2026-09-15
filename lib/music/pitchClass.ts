@@ -10,10 +10,27 @@ export const FLAT_NOTE_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab',
 export type NoteName = typeof NOTE_NAMES[number] | typeof FLAT_NOTE_NAMES[number];
 
 /**
+ * Normalizes Unicode accidentals to standard ASCII notation.
+ */
+export function normalizeAccidentals(str: string): string {
+  return str
+    .replace(/♭/g, 'b')
+    .replace(/♯/g, '#')
+    .replace(/♮/g, '')
+    .replace(/𝄪/g, '##')
+    .replace(/𝄫/g, 'bb');
+}
+
+/**
  * Converts note name to pitch class integer (0-11).
  */
 export function noteToPitchClass(note: string): number {
-  const rawClean = note.trim().toUpperCase();
+  const normalized = normalizeAccidentals(note.trim());
+  const rawClean = normalized.toUpperCase();
+  if (/^[-+]?\d+$/.test(rawClean)) {
+    const parsed = parseInt(rawClean, 10);
+    return ((parsed % 12) + 12) % 12;
+  }
   // Strip octave digits if present at the end, e.g., "C4" -> "C", "F#3" -> "F#", "C-1" -> "C"
   const clean = rawClean.replace(/[-+]?\d+$/, '');
   const map: Record<string, number> = {
@@ -31,8 +48,6 @@ export function noteToPitchClass(note: string): number {
     'B': 11, 'CB': 11,
   };
   if (clean in map) return map[clean];
-  const parsed = parseInt(rawClean, 10);
-  if (!isNaN(parsed)) return ((parsed % 12) + 12) % 12;
   throw new Error(`Invalid note name or integer: ${note}`);
 }
 
