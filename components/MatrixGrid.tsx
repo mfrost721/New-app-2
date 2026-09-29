@@ -62,9 +62,15 @@ function MatrixGrid({
                 const displayVal = interactive ? (userVal ?? '') : correctVal;
                 const isCorrect = userVal === correctVal;
 
+                const noteName = pitchClassToNote(Number(displayVal));
+                const cellAriaLabel = interactive
+                  ? `Matrix cell row ${rIdx + 1} column ${cIdx + 1}${userVal !== undefined ? `, pitch class ${userVal} (${pitchClassToNote(userVal)})` : ''}`
+                  : `Row ${rIdx + 1} column ${cIdx + 1}: pitch class ${displayVal} (${noteName})`;
+
                 return (
                   <div
                     key={`cell-${rIdx}-${cIdx}`}
+                    aria-label={!interactive ? cellAriaLabel : undefined}
                     className={`w-10 h-10 rounded flex flex-col items-center justify-center text-xs font-bold transition-all border ${
                       interactive
                         ? userVal !== undefined
@@ -80,20 +86,20 @@ function MatrixGrid({
                         type="number"
                         min={0}
                         max={11}
-                        aria-label={`Matrix cell row ${rIdx + 1} column ${cIdx + 1}`}
+                        aria-label={cellAriaLabel}
                         value={userVal ?? ''}
                         onChange={(e) => {
                           const val = parseInt(e.target.value, 10);
                           if (onCellChange) onCellChange(rIdx, cIdx, isNaN(val) ? 0 : val);
                         }}
-                        className="w-full h-full text-center bg-transparent focus:outline-none focus:ring-1 focus:ring-amber-400 font-bold"
+                        className="w-full h-full text-center bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 font-bold"
                       />
                     ) : (
                       <>
                         <span>{displayVal}</span>
                         {showNotes && (
                           <span className="text-[9px] font-normal text-slate-400">
-                            {pitchClassToNote(Number(displayVal))}
+                            {noteName}
                           </span>
                         )}
                       </>
