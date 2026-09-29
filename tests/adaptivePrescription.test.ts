@@ -34,6 +34,41 @@ describe('Adaptive Practice Prescription Engine', () => {
     expect(rx.recommendations[0].topic).toBe('Sets');
   });
 
+  it('biases recommendations toward UCO Level IV exam skills when examDate is set', () => {
+    const mixedSkills: SkillItem[] = [
+      // Piano III skill with low mastery (10%) - not Level IV exam
+      { id: 'p3_scale_c_maj', category: 'Class Piano III', topic: 'C Major', mastery: 10, totalAttempts: 2, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+      // Theory IV core exam skill with higher mastery (25%)
+      { id: 't1', category: 'Theory IV', topic: 'Sets', mastery: 25, totalAttempts: 5, correctAttempts: 1, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+      // Aural IV core exam skill with higher mastery (30%)
+      { id: 'a3', category: 'Aural Skills IV', topic: '6/4 Chords', mastery: 30, totalAttempts: 5, correctAttempts: 2, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+      // Piano IV core exam skill with higher mastery (35%)
+      { id: 'p4_scale_eb_maj', category: 'Class Piano IV', topic: 'Eb Major Scale', mastery: 35, totalAttempts: 4, correctAttempts: 1, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+    ];
+
+    const rxNoExam = generatePracticePrescription(mixedSkills, 20, false);
+    // Without exam date, lowest mastery p3_scale_c_maj (10) comes first
+    expect(rxNoExam.recommendations[0].skillId).toBe('p3_scale_c_maj');
+
+    const rxWithExam = generatePracticePrescription(mixedSkills, 20, false, '2026-12-08');
+    // With exam date, UCO IV exam skills (t1, a3, p4_scale_eb_maj) are prioritized
+    expect(rxWithExam.recommendations[0].skillId).toBe('t1');
+    expect(rxWithExam.recommendations[0].reason).toContain('Upcoming UCO IV exam priority');
+  });
+
+  it('maintains road-mode suppression of piano skills even when examDate is set', () => {
+    const mixedSkills: SkillItem[] = [
+      { id: 'p4_scale_eb_maj', category: 'Class Piano IV', topic: 'Eb Scale', mastery: 5, totalAttempts: 2, correctAttempts: 0, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+      { id: 't1', category: 'Theory IV', topic: 'Sets', mastery: 40, totalAttempts: 5, correctAttempts: 2, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+      { id: 'a1', category: 'Aural Skills IV', topic: 'Solfege', mastery: 50, totalAttempts: 5, correctAttempts: 2, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+    ];
+
+    const rxRoadWithExam = generatePracticePrescription(mixedSkills, 20, true, '2026-12-08');
+    const pianoRecs = rxRoadWithExam.recommendations.filter(r => r.category.startsWith('Class Piano'));
+    expect(pianoRecs.length).toBe(0);
+    expect(rxRoadWithExam.recommendations[0].skillId).toBe('t1');
+  });
+
   it('handles empty skills array gracefully', () => {
     const rx = generatePracticePrescription([], 15, false);
     expect(rx.recommendations.length).toBe(1);

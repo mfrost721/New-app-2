@@ -35,7 +35,7 @@ export default function HomeDashboard() {
   );
 
   const prescription = React.useMemo(
-    () => (store ? generatePracticePrescription(store.skills, 20, store.isRoadMode) : null),
+    () => (store ? generatePracticePrescription(store.skills, 20, store.isRoadMode, store.examDate) : null),
     [store]
   );
 

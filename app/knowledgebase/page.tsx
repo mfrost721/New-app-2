@@ -13,6 +13,7 @@ interface KnowledgeArticle {
   commonMistakes: string;
   workedExample: string;
   drillUrl: string;
+  skillIds: string[];
 }
 
 const ARTICLES: KnowledgeArticle[] = [
@@ -25,6 +26,7 @@ const ARTICLES: KnowledgeArticle[] = [
     commonMistakes: 'Forgetting to remove duplicate pitch classes before rotating, or stopping after the first tight span without checking left-packing.',
     workedExample: 'Set {0, 1, 4, 6}: rotations span 6, 11, 10, and 8. The span-6 ordering [0, 1, 4, 6] is normal order.',
     drillUrl: '/theory?skill=t1',
+    skillIds: ['t1'],
   },
   {
     id: 'k2',
@@ -35,6 +37,7 @@ const ARTICLES: KnowledgeArticle[] = [
     commonMistakes: 'Counting directed intervals instead of interval classes, or doubling the tritone.',
     workedExample: '{0, 4, 7} pairs are 4, 7→5, and 3, so the vector is <001110>.',
     drillUrl: '/theory?skill=t2',
+    skillIds: ['t2'],
   },
   {
     id: 'k3',
@@ -45,6 +48,7 @@ const ARTICLES: KnowledgeArticle[] = [
     commonMistakes: 'Transposing the prime form but forgetting to invert the first column, or swapping R with RI.',
     workedExample: 'If P0 begins 0, 11, 7, then I0 begins 0, 1, 5 because each interval of P0 is negated mod 12.',
     drillUrl: '/theory?skill=t3',
+    skillIds: ['t3'],
   },
   {
     id: 'k4',
@@ -55,6 +59,7 @@ const ARTICLES: KnowledgeArticle[] = [
     commonMistakes: 'Calling every second-inversion triad cadential because the figure is 6/4.',
     workedExample: 'Bass C–G–C with G–C–E over the middle bass is a passing 6/4, not a cadence.',
     drillUrl: '/aural?skill=a3',
+    skillIds: ['a3'],
   },
   {
     id: 'k5',
@@ -65,6 +70,7 @@ const ARTICLES: KnowledgeArticle[] = [
     commonMistakes: 'Switching syllable systems inside a bar, or treating 7/8 as an even four-beat measure.',
     workedExample: 'A 2+2+3 bar of 7/8 counts 1-& 2-& 3-&-a if you keep the last group as three eighths.',
     drillUrl: '/aural?skill=a6',
+    skillIds: ['a6'],
   },
   {
     id: 'k6',
@@ -75,6 +81,7 @@ const ARTICLES: KnowledgeArticle[] = [
     commonMistakes: 'Using the same fingering for harmonic and melodic minor, or rushing the thumb-cross and dropping tempo below 100.',
     workedExample: 'Eb major RH begins 3 on Eb, then 1234123 so the thumb lands on F and Bb.',
     drillUrl: '/piano?skill=p4_scale_eb_maj',
+    skillIds: ['p4_scale_eb_maj', 'p4_scale_ab_maj'],
   },
 ];
 
@@ -82,15 +89,18 @@ export default function KnowledgeBasePage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filtered = ARTICLES.filter((article) => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
     const haystack = [
       article.title,
-      article.summary,
       article.body,
+      ...(article.skillIds || []),
+      article.summary,
+      article.category,
       article.commonMistakes,
       article.workedExample,
-      article.category,
     ].join(' ').toLowerCase();
-    return haystack.includes(searchTerm.toLowerCase());
+    return haystack.includes(term);
   });
 
   return (
@@ -112,7 +122,7 @@ export default function KnowledgeBasePage() {
         <input
           type="text"
           aria-label="Search topics in knowledge base"
-          placeholder="Search topics or article body, e.g. prime form, cadential 6/4, Eb fingering..."
+          placeholder="Search topics, article body, or skill IDs (e.g. t1, prime form, cadential 6/4, Eb fingering)..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
@@ -123,9 +133,14 @@ export default function KnowledgeBasePage() {
         {filtered.map((article) => (
           <article key={article.id} className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
             <div className="space-y-2">
-              <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded">
-                {article.category}
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded">
+                  {article.category}
+                </span>
+                <span className="text-[10px] font-mono text-slate-500">
+                  Skill IDs: {article.skillIds.join(', ')}
+                </span>
+              </div>
               <h2 className="text-base font-bold text-slate-100 mt-2">{article.title}</h2>
               <p className="text-xs text-slate-400 leading-relaxed">{article.body}</p>
               <p className="text-xs text-slate-300"><span className="font-bold text-amber-400">Worked example:</span> {article.workedExample}</p>
@@ -136,7 +151,7 @@ export default function KnowledgeBasePage() {
               href={article.drillUrl}
               className="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors pt-2 min-h-[44px]"
             >
-              <span>Practice This Concept</span>
+              <span>Drill this concept</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </article>
