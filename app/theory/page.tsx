@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PitchClassClock from '@/components/PitchClassClock';
 import MatrixGrid from '@/components/MatrixGrid';
 import ScoreViewer from '@/components/ScoreViewer';
 import KeyboardVisualizer from '@/components/KeyboardVisualizer';
+import TheoryDrillPanel from '@/components/TheoryDrillPanel';
 import { getNormalOrder, getPrimeForm, getIntervalVector, formatIntervalVector } from '@/lib/music/pitchClass';
 import { buildScale, SCALE_DEFINITIONS, ModeName } from '@/lib/music/scalesAndModes';
 import {
@@ -15,9 +17,10 @@ import {
 } from '@/lib/music/drillEngine';
 import { generateUnique } from '@/lib/practice/questionBank';
 import { recordPracticeAttemptInStore, loadUserStore } from '@/lib/storage/store';
-import { Brain, Check, Clock, Sparkles, HelpCircle, ArrowRight, RotateCcw } from 'lucide-react';
+import { Brain, Check, Clock } from 'lucide-react';
 
-export default function TheoryPage() {
+function TheoryContent() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'drills' | 'setTheory' | 'matrixSpeedRun' | 'modes' | 'scoreAnalysis'>('drills');
 
   // Drill Runner state
@@ -38,6 +41,33 @@ export default function TheoryPage() {
 
   // Mode Trainer state
   const currentMode: ModeName = 'Dorian';
+
+  // Deep Link Handling
+  useEffect(() => {
+    const skill = searchParams.get('skill');
+    const category = searchParams.get('category');
+
+    if (skill) {
+      if (skill === 't1' || skill === 't2') {
+        setActiveTab('setTheory');
+      } else if (skill === 't3') {
+        setActiveTab('matrixSpeedRun');
+      } else if (skill === 't4') {
+        setActiveTab('modes');
+      } else if (skill === 't5') {
+        setActiveTab('scoreAnalysis');
+      } else {
+        setActiveTab('drills');
+      }
+    } else if (category) {
+      if (['tonal', 'form', 'modes', 'setTheory', 'twelveTone', 'rhythm', 'postTonal'].includes(category)) {
+        setDrillCategory(category as DrillCategory);
+        setActiveTab('drills');
+      } else if (['drills', 'setTheory', 'matrixSpeedRun', 'modes', 'scoreAnalysis'].includes(category)) {
+        setActiveTab(category as 'drills' | 'setTheory' | 'matrixSpeedRun' | 'modes' | 'scoreAnalysis');
+      }
+    }
+  }, [searchParams]);
 
   // Current Drill Question generated deterministically
   const currentDrillQuestion = useMemo(() => {
@@ -152,148 +182,29 @@ export default function TheoryPage() {
 
       {/* 0. GRADED DRILLS ENGINE */}
       {activeTab === 'drills' && (
-        <div className="space-y-6">
-          {/* Controls bar */}
-          <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Category:</span>
-              {(['tonal', 'form', 'modes', 'setTheory', 'twelveTone', 'rhythm', 'postTonal'] as DrillCategory[]).map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setDrillCategory(cat);
-                    setValidationResult(null);
-                    setUserDrillInput('');
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                    drillCategory === cat
-                      ? 'bg-amber-500 border-amber-400 text-slate-950 font-bold'
-                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center space-x-3 text-xs font-bold">
-              <span className="text-slate-400 uppercase">Difficulty:</span>
-              {[1, 2, 3, 4].map(lvl => (
-                <button
-                  key={lvl}
-                  onClick={() => {
-                    setDrillDifficulty(lvl as DrillDifficulty);
-                    setValidationResult(null);
-                    setUserDrillInput('');
-                  }}
-                  className={`w-7 h-7 rounded-lg transition-all flex items-center justify-center ${
-                    drillDifficulty === lvl
-                      ? 'bg-amber-500 text-slate-950 font-black'
-                      : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
-                  }`}
-                >
-                  {lvl}
-                </button>
-              ))}
-
-              <button
-                onClick={() => setSeedInput(Math.floor(Math.random() * 10000))}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 text-xs flex items-center space-x-1"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>New Seed</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Drill Question Card */}
-          <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-4">
-            <div className="flex justify-between items-center text-xs">
-              <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold rounded-lg uppercase">
-                {currentDrillQuestion.topic} • Lvl {currentDrillQuestion.difficulty}
-              </span>
-              <span className="text-slate-500 font-mono">Seed: #{seedInput}</span>
-            </div>
-
-            <h2 className="text-lg font-bold text-slate-100">{currentDrillQuestion.prompt}</h2>
-
-            {/* Multiple Choice Options */}
-            {currentDrillQuestion.options ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                {currentDrillQuestion.options.map((opt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setUserDrillInput(opt);
-                      handleDrillSubmit(opt);
-                    }}
-                    className={`p-3 rounded-xl border text-left text-xs font-semibold transition-all ${
-                      userDrillInput === opt
-                        ? 'bg-amber-500/10 border-amber-500 text-amber-300'
-                        : 'bg-slate-950 border-slate-800 text-slate-200 hover:bg-slate-800'
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              /* Text Input */
-              <div className="flex space-x-3 pt-2">
-                <input
-                  type="text"
-                  placeholder="Enter answer (e.g. notes, prime form, ratio)..."
-                  value={userDrillInput}
-                  onChange={(e) => setUserDrillInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleDrillSubmit()}
-                  className="flex-1 px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 focus:outline-none focus:ring-1 focus:ring-amber-400"
-                />
-                <button
-                  onClick={() => handleDrillSubmit()}
-                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-all"
-                >
-                  Submit
-                </button>
-              </div>
-            )}
-
-            {/* Validation Explanation Box */}
-            {validationResult && (
-              <div
-                className={`p-4 rounded-xl text-xs space-y-2 border ${
-                  validationResult.isCorrect
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                    : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                }`}
-              >
-                <div className="font-bold flex items-center space-x-2">
-                  {validationResult.isCorrect ? <Check className="w-4 h-4 text-emerald-400" /> : <HelpCircle className="w-4 h-4 text-rose-400" />}
-                  <span>{validationResult.isCorrect ? 'Correct!' : 'Incorrect'}</span>
-                </div>
-                <p className="leading-relaxed">{validationResult.explanation}</p>
-
-                <div className="flex space-x-3 pt-2">
-                  <button
-                    onClick={handleNextDrillQuestion}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold rounded-lg text-xs flex items-center space-x-1"
-                  >
-                    <span>Next Question</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                  {!validationResult.isCorrect && (
-                    <button
-                      onClick={() => setValidationResult(null)}
-                      className="px-4 py-2 bg-slate-800/50 hover:bg-slate-800 text-slate-300 font-bold rounded-lg text-xs flex items-center space-x-1"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Retry</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <TheoryDrillPanel
+          drillCategory={drillCategory}
+          onSelectCategory={(cat) => {
+            setDrillCategory(cat);
+            setValidationResult(null);
+            setUserDrillInput('');
+          }}
+          drillDifficulty={drillDifficulty}
+          onSelectDifficulty={(lvl) => {
+            setDrillDifficulty(lvl);
+            setValidationResult(null);
+            setUserDrillInput('');
+          }}
+          seedInput={seedInput}
+          onNewSeed={() => setSeedInput(Math.floor(Math.random() * 10000))}
+          currentQuestion={currentDrillQuestion}
+          userDrillInput={userDrillInput}
+          onUserInputChange={setUserDrillInput}
+          onSubmitAnswer={handleDrillSubmit}
+          validationResult={validationResult}
+          onNextQuestion={handleNextDrillQuestion}
+          onRetry={() => setValidationResult(null)}
+        />
       )}
 
       {/* 1. SET THEORY LAB */}
@@ -454,5 +365,13 @@ export default function TheoryPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TheoryPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading Music Theory Laboratory...</div>}>
+      <TheoryContent />
+    </Suspense>
   );
 }
