@@ -117,7 +117,11 @@ export function SightSingingStudio({
         </div>
       </div>
 
-      <ScoreViewer title="Target Sight-Singing Excerpt (Level IV - Single Target Note E4)" />
+      <ScoreViewer
+        title={`Target Sight-Singing Excerpt (Target Note ${getNoteNameWithOctave(targetMidi)})`}
+        notes={[{ pitch: targetMidi, duration: 'quarter' }]}
+        clef={targetMidi < 60 ? 'bass' : 'treble'}
+      />
 
       {/* Mic Error */}
       {micError && (

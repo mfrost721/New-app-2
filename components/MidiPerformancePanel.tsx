@@ -60,6 +60,15 @@ export function MidiPerformancePanel({
     }
   };
 
+  const exerciseScoreNotes = (currentExercise.targetNotes || []).slice(0, 12).map((midi) => ({
+    pitch: midi,
+    duration: 'quarter' as const,
+  }));
+
+  const exerciseClef = currentExercise.targetNotes && currentExercise.targetNotes.length > 0 && Math.min(...currentExercise.targetNotes) < 60
+    ? 'bass'
+    : 'treble';
+
   return (
     <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-6">
       {/* Header Info */}
@@ -122,8 +131,12 @@ export function MidiPerformancePanel({
       </div>
 
       {/* Notation Score Preview */}
-      {currentExercise.scoreNotation && (
-        <ScoreViewer title={`Score Representation: ${currentExercise.title}`} />
+      {currentExercise.targetNotes && currentExercise.targetNotes.length > 0 && (
+        <ScoreViewer
+          title={`Score Representation: ${currentExercise.title}`}
+          notes={exerciseScoreNotes}
+          clef={exerciseClef}
+        />
       )}
 
       {/* Sight Reading Simulator Preview Timer */}
