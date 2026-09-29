@@ -153,6 +153,40 @@ describe('Component Rendering & Interactive Behavior', () => {
       fireEvent.click(noteBtn);
       expect(handleNoteClick).toHaveBeenCalledWith(0);
     });
+
+    it('renders correct note count and accessible aria-label summarizing notes for treble clef', () => {
+      render(
+        <ScoreViewer
+          clef="treble"
+          timeSig={[3, 4]}
+          notes={[
+            { pitch: 'C4', duration: 'q' },
+            { pitch: 'E4', duration: 'q' },
+            { pitch: 'G4', duration: 'q' },
+          ]}
+        />
+      );
+
+      const svg = screen.getByRole('img');
+      expect(svg.getAttribute('aria-label')).toBe('Treble staff: C4 quarter, E4 quarter, G4 quarter');
+    });
+
+    it('renders bass clef staff with MIDI pitches and short duration/accidental props', () => {
+      render(
+        <ScoreViewer
+          title="Bass Excerpt"
+          clef="bass"
+          timeSig={[4, 4]}
+          notes={[
+            { pitch: 48, duration: 'h' }, // C3 half
+            { pitch: 51, duration: '8', accidental: '#' }, // D#3 eighth
+          ]}
+        />
+      );
+
+      const svg = screen.getByRole('img');
+      expect(svg.getAttribute('aria-label')).toBe('Bass staff: C3 half, D#3 eighth');
+    });
   });
 
   describe('LayoutWrapper', () => {

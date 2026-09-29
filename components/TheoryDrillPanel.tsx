@@ -4,6 +4,7 @@ import React from 'react';
 import { DrillCategory, DrillDifficulty, DrillQuestion, AnswerValidationResult } from '@/lib/music/drillEngine';
 import TheoryAnswerInput from './TheoryAnswerInput';
 import TheoryFeedback from './TheoryFeedback';
+import ScoreViewer, { ScoreNote } from './ScoreViewer';
 import { Sparkles } from 'lucide-react';
 
 export interface TheoryDrillPanelProps {
@@ -46,6 +47,21 @@ export function TheoryDrillPanel({
     'rhythm',
     'postTonal',
   ];
+
+  // Helper to construct ScoreViewer notes for Chord Spelling questions
+  const isChordSpelling = currentQuestion.topic === 'Chord Spelling' || currentQuestion.subtopic === 'Chord Spelling';
+  let drillScoreNotes: ScoreNote[] | undefined;
+
+  if (isChordSpelling && currentQuestion.correctAnswer) {
+    const tokens = currentQuestion.correctAnswer.split(/[\s,]+/).filter(Boolean);
+    const isNotes = tokens.length > 0 && tokens.every(t => /^[A-Ga-g][#b♭♯♮]*$/.test(t));
+    if (isNotes) {
+      drillScoreNotes = tokens.map(t => ({
+        pitch: `${t.toUpperCase()}4`,
+        duration: 'quarter',
+      }));
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -104,6 +120,14 @@ export function TheoryDrillPanel({
         </div>
 
         <h2 className="text-lg font-bold text-slate-100">{currentQuestion.prompt}</h2>
+
+        {drillScoreNotes && drillScoreNotes.length > 0 && (
+          <ScoreViewer
+            title={`Staff Notation Target: ${currentQuestion.topic}`}
+            notes={drillScoreNotes}
+            clef="treble"
+          />
+        )}
 
         <TheoryAnswerInput
           options={currentQuestion.options}
