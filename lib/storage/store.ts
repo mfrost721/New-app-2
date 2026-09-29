@@ -139,11 +139,17 @@ export function recordPracticeAttemptInStore(
   const targetSkill = currentState.skills.find(s => s.id === attempt.skillId);
   if (!targetSkill) return currentState;
 
-  if (attempt.countsTowardMastery === false) {
+  const countsTowardMastery = attempt.countsTowardMastery ?? !currentState.isRoadMode;
+
+  if (!countsTowardMastery) {
+    const loggedAttempt = {
+      ...attempt,
+      countsTowardMastery: false,
+    };
     const loggedState: UserStoreState = {
       ...currentState,
       schemaVersion: STORE_SCHEMA_VERSION,
-      history: [attempt, ...currentState.history.slice(0, 99)],
+      history: [loggedAttempt, ...currentState.history.slice(0, 99)],
     };
     saveUserStore(loggedState);
     return loggedState;

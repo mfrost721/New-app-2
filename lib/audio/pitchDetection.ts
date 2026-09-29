@@ -13,6 +13,7 @@ export interface PitchAnalysisResult {
   fullName: string;
   centsDeviation: number;
   clarity: number; // 0 to 1
+  confidence: number; // 0 to 1 (alias for clarity)
   solfege: string;
   scaleDegree: string;
 }
@@ -38,10 +39,45 @@ export interface PitchDetectionOptions {
 }
 
 export interface PitchEvaluationOptions {
-  toleranceCents?: number;    // default 50 cents
+  toleranceCents?: number;    // default 30 cents for credit
+  inTuneCents?: number;       // default 15 cents for "in tune"
   clarityThreshold?: number;  // default 0.6
   minValidFrames?: number;    // default 3
   allowOctaveShift?: boolean; // default true
+}
+
+/**
+ * Calculates lag bounding for autocorrelation based on minimum frequency.
+ * Lags beyond `sampleRate / minFreq` correspond to frequencies below `minFreq`.
+ * Bounding lag eliminates computing discarded low-frequency correlations.
+ */
+export function calcBoundedLag(sampleRate: number, minFreq: number, bufferSize: number): number {
+  if (!Number.isFinite(sampleRate) || sampleRate <= 0 || !Number.isFinite(minFreq) || minFreq <= 0) {
+    return bufferSize;
+  }
+  const boundedLagFromMinFreq = Math.ceil(sampleRate / minFreq) + 2;
+  return Math.max(3, Math.min(bufferSize, boundedLagFromMinFreq));
+}
+
+/**
+ * Checks whether cents deviation is within the "in tune" threshold (default ±15 cents).
+ */
+export function isPitchInTune(centsDeviation: number, inTuneWindow = 15): boolean {
+  return Math.abs(centsDeviation) <= inTuneWindow;
+}
+
+/**
+ * Checks whether cents deviation is within the credit tolerance window (default ±30 cents).
+ */
+export function isPitchWithinTolerance(centsDeviation: number, toleranceWindow = 30): boolean {
+  return Math.abs(centsDeviation) <= toleranceWindow;
+}
+
+/**
+ * Checks whether pitch detection confidence / clarity meets or exceeds minimum threshold.
+ */
+export function isPitchConfidenceValid(confidence: number, threshold = 0.6): boolean {
+  return Number.isFinite(confidence) && confidence >= threshold;
 }
 
 export interface PitchEvaluationResult {
@@ -193,13 +229,10 @@ export function autoCorrelate(
   const newSize = buf.length;
   if (newSize < 32) return null;
 
-  // Performance optimization: limit autocorrelation lag to maxLag based on minFreq.
+  // Performance optimization: limit autocorrelation lag to maxLag based on minFreq using calcBoundedLag.
   // Lags beyond sampleRate / minFreq correspond to frequencies below minFreq (which are rejected).
   // This reduces outer loop iterations from newSize (~2048) to maxLag (~884), saving over 30% CPU per frame.
-  const boundedLagFromMinFreq = Number.isFinite(minFreq) && minFreq > 0
-    ? Math.ceil(sampleRate / minFreq) + 2
-    : newSize;
-  const maxLag = Math.max(3, Math.min(newSize, boundedLagFromMinFreq));
+  const maxLag = calcBoundedLag(sampleRate, minFreq, newSize);
 
   const c = getScratchBuffer(newSize);
   for (let i = 0; i < maxLag; i++) {
@@ -245,7 +278,8 @@ export function autoCorrelate(
   if (isNaN(freq) || !isFinite(freq) || freq < minFreq || freq > maxFreq) return null;
 
   const clarity = c[0] > 0 ? Math.min(1, Math.max(0, maxval / c[0])) : 0;
-  if (clarity < clarityThreshold) return null;
+  const confidence = Math.round(clarity * 100) / 100;
+  if (confidence < clarityThreshold) return null;
 
   const info = freqToMidi(freq, preferFlat, keyTonicPc);
 
@@ -257,7 +291,8 @@ export function autoCorrelate(
     noteName: info.noteName,
     fullName: info.fullName,
     centsDeviation: info.cents,
-    clarity: Math.round(clarity * 100) / 100,
+    clarity: confidence,
+    confidence,
     solfege: info.solfege,
     scaleDegree: info.scaleDegree,
   };
@@ -273,13 +308,15 @@ export function evaluateSungPitch(
   target: number | number[],
   options: PitchEvaluationOptions = {}
 ): PitchEvaluationResult {
-  const toleranceCents = options.toleranceCents ?? 50;
+  const toleranceCents = options.toleranceCents ?? 30;
+  const inTuneCents = options.inTuneCents ?? 15;
   const clarityThreshold = options.clarityThreshold ?? 0.6;
   const minValidFrames = options.minValidFrames ?? 3;
   const allowOctaveShift = options.allowOctaveShift ?? true;
 
   const validFrames = pitchResults.filter(
-    (res): res is PitchAnalysisResult => res !== null && res.clarity >= clarityThreshold
+    (res): res is PitchAnalysisResult =>
+      res !== null && isPitchConfidenceValid(res.confidence ?? res.clarity, clarityThreshold)
   );
 
   if (validFrames.length < minValidFrames) {
@@ -338,14 +375,16 @@ export function evaluateSungPitch(
       };
     }
 
+    const inTune = isPitchInTune(avgCents, inTuneCents);
+    const withinTolerance = isPitchWithinTolerance(avgCents, toleranceCents);
+    const isCorrect = withinTolerance && (isExactMidiMatch || isOctaveTransposed);
+
     const absCents = Math.abs(avgCents);
     let pitchScore = 100;
-    if (absCents > 15 && absCents <= 35) {
-      pitchScore = 88;
-    } else if (absCents > 35 && absCents <= toleranceCents) {
-      pitchScore = 75;
-    } else if (absCents > toleranceCents) {
-      pitchScore = 50;
+    if (!inTune && withinTolerance) {
+      pitchScore = 85;
+    } else if (!withinTolerance) {
+      pitchScore = Math.max(0, 100 - Math.round((absCents - toleranceCents) * 2));
     }
 
     if (isOctaveTransposed) {
@@ -356,13 +395,14 @@ export function evaluateSungPitch(
       ? Math.min(100, Math.round((validFrames.length / pitchResults.length) * 120))
       : 0;
     const totalScore = Math.round(pitchScore * 0.7 + rhythmScore * 0.3);
-    const isCorrect = absCents <= toleranceCents && (isExactMidiMatch || isOctaveTransposed);
 
     const feedback = isCorrect
       ? isOctaveTransposed
         ? `Correct pitch class ${detectedFullName} (transposed octave, ${avgCents > 0 ? '+' : ''}${avgCents} cents).`
-        : `Accurate pitch! ${detectedFullName} (${avgCents > 0 ? '+' : ''}${avgCents} cents).`
-      : `Pitch deviation too wide (${avgCents > 0 ? '+' : ''}${avgCents} cents).`;
+        : inTune
+        ? `Accurate pitch! In tune: ${detectedFullName} (${avgCents > 0 ? '+' : ''}${avgCents} cents).`
+        : `Acceptable pitch ${detectedFullName} (${avgCents > 0 ? '+' : ''}${avgCents} cents, within ±${toleranceCents} cents credit window).`
+      : `Pitch deviation too wide (${avgCents > 0 ? '+' : ''}${avgCents} cents, exceeds ±${toleranceCents} cents tolerance).`;
 
     return {
       isCorrect,

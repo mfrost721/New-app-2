@@ -6,9 +6,19 @@ import {
   getScaleDegreeForPitchClass,
   getNoteNameWithOctave,
   evaluateSungPitch,
+  calcBoundedLag,
+  isPitchInTune,
+  isPitchWithinTolerance,
+  isPitchConfidenceValid,
   PitchAnalysisResult,
 } from '../lib/audio/pitchDetection';
 import { soundEngine } from '../lib/audio/soundEngine';
+import {
+  parseMIDIMessage,
+  MIDIController,
+  WebMidiAccess,
+  WebMidiInput,
+} from '../lib/audio/midi';
 
 // Mock Web Audio API for browser environment simulation
 class MockAudioNode {
@@ -160,6 +170,33 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
     expect(resNoise).toBeNull();
   });
 
+  describe('Pitch Detection Pure Threshold Helpers & Lag Bounding', () => {
+    it('calculates lag bounding correctly based on minFreq and buffer size', () => {
+      // 44100 / 50 = 882 + 2 = 884
+      expect(calcBoundedLag(44100, 50, 2048)).toBe(884);
+      // Small buffer size caps lag
+      expect(calcBoundedLag(44100, 50, 512)).toBe(512);
+      // Fallback for edge cases
+      expect(calcBoundedLag(0, 50, 1024)).toBe(1024);
+    });
+
+    it('evaluates pitch cents in tune and tolerance thresholds correctly', () => {
+      expect(isPitchInTune(10)).toBe(true);
+      expect(isPitchInTune(-15)).toBe(true);
+      expect(isPitchInTune(16)).toBe(false);
+
+      expect(isPitchWithinTolerance(25)).toBe(true);
+      expect(isPitchWithinTolerance(-30)).toBe(true);
+      expect(isPitchWithinTolerance(31)).toBe(false);
+    });
+
+    it('validates confidence threshold accurately', () => {
+      expect(isPitchConfidenceValid(0.8, 0.6)).toBe(true);
+      expect(isPitchConfidenceValid(0.59, 0.6)).toBe(false);
+      expect(isPitchConfidenceValid(NaN, 0.6)).toBe(false);
+    });
+  });
+
   describe('Deterministic Sung Pitch Evaluator', () => {
     it('returns score 0 and helpful feedback on silent or insufficient voice frames', () => {
       const evaluation = evaluateSungPitch([null, null, null], 60);
@@ -179,6 +216,7 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
         fullName: 'C4',
         centsDeviation: 2,
         clarity: 0.95,
+        confidence: 0.95,
         solfege: 'Do',
         scaleDegree: '1',
       };
@@ -204,6 +242,7 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
         fullName: 'C5',
         centsDeviation: 0,
         clarity: 0.9,
+        confidence: 0.9,
         solfege: 'Do',
         scaleDegree: '1',
       };
@@ -226,6 +265,7 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
         fullName: 'D4',
         centsDeviation: 0,
         clarity: 0.9,
+        confidence: 0.9,
         solfege: 'Re',
         scaleDegree: '2',
       };
@@ -236,6 +276,64 @@ describe('Pitch Detection & Theory Conversions Engine', () => {
       expect(evaluation.isCorrect).toBe(false);
       expect(evaluation.feedback).toContain('does not match target');
     });
+  });
+});
+
+describe('Web MIDI Message Parsing & Controller Hardening', () => {
+  it('parses Note On and Note Off messages correctly', () => {
+    // Note On Middle C (velocity 100)
+    const noteOn = parseMIDIMessage(new Uint8Array([0x90, 60, 100]));
+    expect(noteOn).toEqual({ note: 60, velocity: 100, type: 'noteon' });
+
+    // Note Off Middle C (velocity 0 on 0x90 or 0x80)
+    const noteOff1 = parseMIDIMessage(new Uint8Array([0x90, 60, 0]));
+    expect(noteOff1).toEqual({ note: 60, velocity: 0, type: 'noteoff' });
+
+    const noteOff2 = parseMIDIMessage(new Uint8Array([0x80, 60, 64]));
+    expect(noteOff2).toEqual({ note: 60, velocity: 64, type: 'noteoff' });
+  });
+
+  it('ignores real-time system clock (0xF8), active sensing (0xFE), and non-note control change / pitch bend messages', () => {
+    expect(parseMIDIMessage(new Uint8Array([0xf8]))).toBeNull(); // MIDI Clock
+    expect(parseMIDIMessage(new Uint8Array([0xfe]))).toBeNull(); // Active Sensing
+    expect(parseMIDIMessage(new Uint8Array([0xb0, 7, 100]))).toBeNull(); // Control Change
+    expect(parseMIDIMessage(new Uint8Array([0xe0, 0, 64]))).toBeNull(); // Pitch Bend
+  });
+
+  it('handles device state changes and disconnects without throwing', async () => {
+    const mockInput: WebMidiInput = {
+      id: 'input-1',
+      onmidimessage: null,
+    };
+    const mockAccess: WebMidiAccess = {
+      inputs: {
+        values: function* () {
+          yield mockInput;
+        },
+      },
+      onstatechange: null,
+    };
+
+    const controller = new MIDIController();
+    await controller.init(mockAccess);
+
+    let receivedMsg: unknown = null;
+    controller.onNote(msg => {
+      receivedMsg = msg;
+    });
+
+    // Simulate input message
+    controller.handleMIDIMessage({ data: new Uint8Array([0x90, 60, 80]) });
+    expect(receivedMsg).toEqual({ note: 60, velocity: 80, type: 'noteon' });
+
+    // Simulate state change (device disconnect/reconnect)
+    expect(() => {
+      if (mockAccess.onstatechange) {
+        mockAccess.onstatechange({ port: mockInput });
+      }
+    }).not.toThrow();
+
+    controller.destroy();
   });
 });
 

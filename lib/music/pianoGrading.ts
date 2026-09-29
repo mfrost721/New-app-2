@@ -99,9 +99,8 @@ export function evaluateMidiSequence(
       correctCount++;
       playedIdx++;
     } else if (playedPc === expectedPc) {
-      // Octave error: right pitch class, wrong octave
+      // Octave error: right pitch class, wrong octave (tracked separately from wrong pitch classes)
       octaveErrors.push({ expectedMidi: expected, playedMidi: played.midi, index: i });
-      wrongNotes.push({ expectedMidi: expected, expectedNote, playedMidi: played.midi, playedNote, index: i });
       playedIdx++;
     } else {
       // Check if played note matches the *next* target note (skip/missed note scenario)
@@ -109,7 +108,7 @@ export function evaluateMidiSequence(
         missedNotes.push({ expectedMidi: expected, expectedNote, index: i });
         // Don't advance playedIdx yet so it matches targetNotes[i+1] in next iteration
       } else {
-        // Wrong note played
+        // Pitch-class error (wrong note altogether)
         wrongNotes.push({ expectedMidi: expected, expectedNote, playedMidi: played.midi, playedNote, index: i });
         playedIdx++;
       }
@@ -142,21 +141,28 @@ export function evaluateMidiSequence(
     }
   }
 
-  // Calculate raw score out of 100
-  const noteAccuracyRatio = Math.max(0, correctCount - (extraNotes.length * 0.5)) / targetNotes.length;
-  let rawScore = Math.round(noteAccuracyRatio * 100);
+  // Calculate pitch accuracy score with partial credit for octave errors and penalties for extra notes
+  const totalPitchPoints = correctCount + (octaveErrors.length * 0.5) - (extraNotes.length * 0.5);
+  const noteAccuracyRatio = Math.max(0, totalPitchPoints) / targetNotes.length;
+  const pitchScore = Math.round(Math.min(1, noteAccuracyRatio) * 100);
 
-  // Apply timing penalty if hesitations or rushing occurred frequently
-  if (timingErrors.length > 0) {
-    const timingPenalty = Math.min(20, timingErrors.length * 4);
-    rawScore = Math.max(0, rawScore - timingPenalty);
+  // Analyze rhythm and timing score if timestamps exist and multiple notes played
+  const hasTimestamps = playedEvents.length > 1 && playedEvents.some(e => e.timestampMs > 0);
+  let rhythmScore = 100;
+  if (hasTimestamps) {
+    if (timingErrors.length > 0) {
+      rhythmScore = Math.max(0, 100 - timingErrors.length * 15);
+    }
   }
 
-  const score = Math.min(100, Math.max(0, rawScore));
+  const score = hasTimestamps
+    ? Math.round(pitchScore * 0.8 + rhythmScore * 0.2)
+    : pitchScore;
+
   const passed = score >= 80;
 
   // Construct detailed diagnostic feedback
-  if (correctCount === targetNotes.length && extraNotes.length === 0 && timingErrors.length === 0) {
+  if (correctCount === targetNotes.length && octaveErrors.length === 0 && extraNotes.length === 0 && timingErrors.length === 0) {
     feedbackMessages.push('Perfect Execution! Pitch accuracy, octave placement, and steady pulse all verified.');
   } else {
     if (wrongNotes.length > 0) {
@@ -166,7 +172,11 @@ export function evaluateMidiSequence(
       feedbackMessages.push(`Octave Displacement (${octaveErrors.length}): correct pitch class played in wrong octave.`);
     }
     if (missedNotes.length > 0) {
-      feedbackMessages.push(`Missed Notes (${missedNotes.length}): skipped required pitches in the sequence.`);
+      if (playedEvents.length === 0) {
+        feedbackMessages.push(`Missed Notes (${missedNotes.length}): No notes played.`);
+      } else {
+        feedbackMessages.push(`Missed Notes (${missedNotes.length}): skipped required pitches in the sequence.`);
+      }
     }
     if (extraNotes.length > 0) {
       feedbackMessages.push(`Extra Notes (${extraNotes.length}): additional key presses detected.`);

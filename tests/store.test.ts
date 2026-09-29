@@ -241,4 +241,25 @@ describe('Storage and UserStore Engine', () => {
     expect(updated.totalMinutesStudied).toBe(0);
     expect(updated.skills.find((s) => s.id === 't1')?.mastery).toBe(0);
   });
+
+  it('prevents mastery and streak updates when store is in road mode (isRoadMode: true)', () => {
+    const attempt: PracticeAttempt = {
+      skillId: 't1',
+      isCorrect: true,
+      responseTimeMs: 1200,
+      date: '2026-03-02T12:00:00.000Z',
+    };
+    const roadState: UserStoreState = {
+      ...INITIAL_STATE,
+      isRoadMode: true,
+      academicStreak: 2,
+      lastAcademicDate: '2026-03-01',
+    };
+
+    const updated = recordPracticeAttemptInStore(roadState, attempt, 10);
+    expect(updated.history[0].countsTowardMastery).toBe(false);
+    expect(updated.academicStreak).toBe(2);
+    expect(updated.totalMinutesStudied).toBe(0);
+    expect(updated.skills.find((s) => s.id === 't1')?.mastery).toBe(0);
+  });
 });
