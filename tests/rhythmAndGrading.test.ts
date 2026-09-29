@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { updateSkillMastery, calculateExamReadiness, SkillItem, PracticeAttempt } from '../lib/adaptive/mastery';
 import { getRhythmicSyllable, isSyncopated, COMMON_METERS } from '../lib/music/rhythm';
+import { evaluateMidiSequence, PlayedNoteEvent } from '../lib/music/pianoGrading';
 
 describe('Rhythm & Meter Engine Unit Tests', () => {
   it('returns valid meter definitions for common meters', () => {
@@ -108,5 +109,78 @@ describe('Grading & Adaptive Mastery Calculations', () => {
     expect(readiness.masteryPercentage).toBe(0);
     expect(readiness.readinessLabel).toBe('LOW');
     expect(readiness.passingProbability).toBe(25);
+  });
+});
+
+describe('evaluateMidiSequence Grading Tests', () => {
+  it('handles empty target sequence gracefully', () => {
+    const res = evaluateMidiSequence([], []);
+    expect(res.score).toBe(100);
+    expect(res.passed).toBe(true);
+    expect(res.feedbackMessages).toContain('No target notes specified.');
+  });
+
+  it('evaluates missing notes when no notes are played', () => {
+    const res = evaluateMidiSequence([], [60, 62, 64]);
+    expect(res.score).toBe(0);
+    expect(res.passed).toBe(false);
+    expect(res.missedNotes.length).toBe(3);
+    expect(res.feedbackMessages.some(f => f.includes('No notes played.'))).toBe(true);
+  });
+
+  it('evaluates extra notes played beyond target sequence with clear feedback', () => {
+    const played: PlayedNoteEvent[] = [
+      { midi: 60, timestampMs: 0 },
+      { midi: 62, timestampMs: 500 },
+      { midi: 64, timestampMs: 1000 },
+      { midi: 65, timestampMs: 1500 },
+      { midi: 67, timestampMs: 2000 },
+    ];
+    const target = [60, 62, 64];
+
+    const res = evaluateMidiSequence(played, target);
+    expect(res.extraNotes.length).toBe(2);
+    expect(res.correctCount).toBe(3);
+    expect(res.feedbackMessages.some(f => f.includes('Extra Notes (2)'))).toBe(true);
+  });
+
+  it('separates octave displacement from wrong pitch-class errors', () => {
+    // Target: C4 (60), D4 (62), E4 (64)
+    // Played: C5 (72, octave error), F4 (65, wrong pitch class), E4 (64)
+    const played: PlayedNoteEvent[] = [
+      { midi: 72, timestampMs: 0 },
+      { midi: 65, timestampMs: 500 },
+      { midi: 64, timestampMs: 1000 },
+    ];
+    const target = [60, 62, 64];
+
+    const res = evaluateMidiSequence(played, target);
+    expect(res.octaveErrors.length).toBe(1);
+    expect(res.octaveErrors[0].expectedMidi).toBe(60);
+    expect(res.octaveErrors[0].playedMidi).toBe(72);
+
+    expect(res.wrongNotes.length).toBe(1);
+    expect(res.wrongNotes[0].expectedMidi).toBe(62);
+    expect(res.wrongNotes[0].playedMidi).toBe(65);
+
+    expect(res.feedbackMessages.some(f => f.includes('Octave Displacement (1)'))).toBe(true);
+    expect(res.feedbackMessages.some(f => f.includes('Wrong Notes (1)'))).toBe(true);
+  });
+
+  it('evaluates rhythm hesitations and rushed notes when timestamps exist', () => {
+    // Target BPM = 100 -> 600ms per quarter note
+    // Played intervals: 1500ms (hesitation, ratio 2.5), 100ms (rushed, ratio ~0.16)
+    const played: PlayedNoteEvent[] = [
+      { midi: 60, timestampMs: 0 },
+      { midi: 62, timestampMs: 1500 }, // hesitation
+      { midi: 64, timestampMs: 1600 }, // rushed
+    ];
+    const target = [60, 62, 64];
+
+    const res = evaluateMidiSequence(played, target, 100);
+    expect(res.timingErrors.length).toBe(2);
+    expect(res.timingErrors.some(t => t.issue === 'hesitation')).toBe(true);
+    expect(res.timingErrors.some(t => t.issue === 'rushed')).toBe(true);
+    expect(res.feedbackMessages.some(f => f.includes('Rhythm / Tempo Issues'))).toBe(true);
   });
 });

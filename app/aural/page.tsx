@@ -49,14 +49,20 @@ function AuralContent() {
 
   const handleRecordSuccess = (skillId: string, customMsg?: string) => {
     const store = loadUserStore();
+    const countsTowardMastery = !store.isRoadMode;
     recordPracticeAttemptInStore(store, {
       skillId,
       isCorrect: true,
       confidenceRating: 4,
       responseTimeMs: 2500,
       date: new Date().toISOString(),
+      countsTowardMastery,
     });
-    setFeedback(customMsg || 'Correct! Mastery updated (+6 pts).');
+    setFeedback(
+      countsTowardMastery
+        ? (customMsg || 'Correct! Mastery updated (+6 pts).')
+        : (customMsg ? `${customMsg} (Road mode - practice logged without altering mastery)` : 'Correct! (Road mode - practice logged without altering mastery)')
+    );
     setTimeout(() => setFeedback(null), 4000);
   };
 

@@ -146,6 +146,9 @@ function PianoContent() {
   const handleCommitAttempt = (score: number, isPassed: boolean, method: string) => {
     if (!userStore || !currentExercise) return;
 
+    const isSelfRubric = method === 'Rubric Self-Cert' || method.toLowerCase().includes('rubric') || method.toLowerCase().includes('self');
+    const countsTowardMastery = !userStore.isRoadMode && !isSelfRubric;
+
     const updated = recordPracticeAttemptInStore(userStore, {
       skillId: currentExercise.id,
       isCorrect: isPassed,
@@ -153,10 +156,15 @@ function PianoContent() {
       responseTimeMs: Math.max(1000, playedEvents.length * 600),
       errorType: isPassed ? undefined : (directResult?.wrongNotes.length ? 'Wrong Notes' : 'Rhythm/Timing Issue'),
       date: new Date().toISOString(),
+      countsTowardMastery,
     });
 
     setUserStore(updated);
-    setStatusMessage(`Attempt saved! Progress recorded using ${method} (Score: ${score}%).`);
+    if (!countsTowardMastery) {
+      setStatusMessage(`Practice attempt saved! Logged via ${method} (Road Mode / Self-Rubric: Mastery unchanged).`);
+    } else {
+      setStatusMessage(`Attempt saved! Progress recorded using ${method} (Score: ${score}%).`);
+    }
     setTimeout(() => setStatusMessage(null), 4000);
   };
 
