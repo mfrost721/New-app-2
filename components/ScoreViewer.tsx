@@ -29,6 +29,7 @@ interface ParsedNote {
   pitchLabel: string;
   noteLetter: string;
   octave: number;
+  midi: number;
   accidentalSymbol?: string;
   diatonicStep: number;
   durationName: 'quarter' | 'half' | 'whole' | 'eighth';
@@ -42,6 +43,16 @@ const LETTER_STEPS: Record<string, number> = {
   G: 4,
   A: 5,
   B: 6,
+};
+
+const LETTER_PITCH_CLASSES: Record<string, number> = {
+  C: 0,
+  D: 2,
+  E: 4,
+  F: 5,
+  G: 7,
+  A: 9,
+  B: 11,
 };
 
 function normalizeDurationName(duration?: ScoreNoteDuration): 'quarter' | 'half' | 'whole' | 'eighth' {
@@ -59,11 +70,12 @@ function parseNote(n: ScoreNote): ParsedNote {
 
   let letter = 'C';
   let octave = 4;
+  let midi = 60;
   let accSym = n.accidental ? normalizeAccidentalSymbol(n.accidental) : undefined;
   let pitchLabel = '';
 
   if (typeof n.pitch === 'number') {
-    const midi = n.pitch;
+    midi = n.pitch;
     octave = Math.floor(midi / 12) - 1;
     const pc = ((midi % 12) + 12) % 12;
     const preferFlat = accSym === '♭';
@@ -79,7 +91,7 @@ function parseNote(n: ScoreNote): ParsedNote {
 
     // Check if numeric string
     if (/^[-+]?\d+$/.test(rawUpper)) {
-      const midi = parseInt(rawUpper, 10);
+      midi = parseInt(rawUpper, 10);
       octave = Math.floor(midi / 12) - 1;
       const pc = ((midi % 12) + 12) % 12;
       const noteName = pitchClassToNote(pc);
@@ -105,10 +117,16 @@ function parseNote(n: ScoreNote): ParsedNote {
 
         const displayAccStr = accSym === '♯' ? '#' : accSym === '♭' ? 'b' : accSym === '♮' ? '' : '';
         pitchLabel = `${letter}${displayAccStr}${octave}`;
+
+        const basePc = LETTER_PITCH_CLASSES[letter] ?? 0;
+        const accOffset = accSym === '♯' ? 1 : accSym === '♭' ? -1 : 0;
+        midi = (octave + 1) * 12 + basePc + accOffset;
       } else {
         // Fallback for simple letters or unrecognized strings
         letter = rawUpper[0] && LETTER_STEPS[rawUpper[0]] !== undefined ? rawUpper[0] : 'C';
         pitchLabel = pitchStr || 'C4';
+        const basePc = LETTER_PITCH_CLASSES[letter] ?? 0;
+        midi = (octave + 1) * 12 + basePc;
       }
     }
   }
@@ -120,6 +138,7 @@ function parseNote(n: ScoreNote): ParsedNote {
     pitchLabel,
     noteLetter: letter,
     octave,
+    midi,
     accidentalSymbol: accSym,
     diatonicStep,
     durationName,
@@ -263,10 +282,16 @@ export default function ScoreViewer({
               <g
                 key={idx}
                 onClick={() => onNoteClick && onNoteClick(idx)}
-                className={`group ${onNoteClick ? 'cursor-pointer' : ''}`}
+                onKeyDown={(e) => {
+                  if (onNoteClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onNoteClick(idx);
+                  }
+                }}
+                className={`group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${onNoteClick ? 'cursor-pointer' : ''}`}
                 tabIndex={onNoteClick ? 0 : undefined}
                 role={onNoteClick ? 'button' : undefined}
-                aria-label={`Note ${pn.pitchLabel}, ${pn.durationName}${rawNote?.annotation ? `, annotation ${rawNote.annotation}` : ''}`}
+                aria-label={`Note ${pn.pitchLabel} (MIDI ${pn.midi}), ${pn.durationName}${rawNote?.annotation ? `, annotation ${rawNote.annotation}` : ''}`}
               >
                 {/* Optional Annotation */}
                 {rawNote?.annotation && (

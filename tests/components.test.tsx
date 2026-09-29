@@ -149,7 +149,7 @@ describe('Component Rendering & Interactive Behavior', () => {
       expect(screen.getByText('Root')).toBeDefined();
       expect(screen.getByText('m.1: Tonic Harmony')).toBeDefined();
 
-      const noteBtn = screen.getByLabelText(/Note C4, quarter, annotation Root/i);
+      const noteBtn = screen.getByLabelText(/Note C4 \(MIDI 60\), quarter, annotation Root/i);
       fireEvent.click(noteBtn);
       expect(handleNoteClick).toHaveBeenCalledWith(0);
     });
