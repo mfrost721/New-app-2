@@ -73,16 +73,31 @@ export const INITIAL_STATE: UserStoreState = {
   history: [],
 };
 
-export function migrateUserStore(raw: unknown): UserStoreState {
-  const parsed = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
+export function exportUserStore(state?: UserStoreState): string {
+  const targetState = state ?? loadUserStore();
+  return JSON.stringify(targetState, null, 2);
+}
+
+export function migrateUserStore(raw: unknown, baseSkills: SkillItem[] = INITIAL_SKILLS): UserStoreState {
+  const parsed = (raw && typeof raw === 'object' && raw !== null) ? raw as Record<string, unknown> : {};
   const incomingSkills = Array.isArray(parsed.skills) ? parsed.skills as SkillItem[] : [];
   const byId = new Map(incomingSkills.filter((skill) => skill && typeof skill.id === 'string').map((skill) => [skill.id, skill]));
-  const initialSkillIds = new Set(INITIAL_SKILLS.map((s) => s.id));
-  const skills = INITIAL_SKILLS.map((skill) => byId.get(skill.id) ?? skill);
 
-  // Preserve newly or custom registered skills from incoming store that are not in INITIAL_SKILLS
+  // Combine INITIAL_SKILLS and baseSkills to ensure all registered/current skills are preserved
+  const registrySkillsMap = new Map<string, SkillItem>();
+  for (const s of INITIAL_SKILLS) registrySkillsMap.set(s.id, s);
+  for (const s of baseSkills) registrySkillsMap.set(s.id, s);
+
+  const preservedSkillIds = new Set(registrySkillsMap.keys());
+
+  // First: map registered skills, restoring imported skill data if found in file, or keeping registered skill
+  const skills: SkillItem[] = Array.from(registrySkillsMap.values()).map(
+    (regSkill) => byId.get(regSkill.id) ?? regSkill
+  );
+
+  // Second: preserve any additional custom skills in incomingSkills that are not in registry
   for (const skill of incomingSkills) {
-    if (skill && typeof skill.id === 'string' && !initialSkillIds.has(skill.id)) {
+    if (skill && typeof skill.id === 'string' && !preservedSkillIds.has(skill.id)) {
       skills.push(skill);
     }
   }
@@ -96,6 +111,54 @@ export function migrateUserStore(raw: unknown): UserStoreState {
     skills,
     history,
   };
+}
+
+export function importUserStore(jsonInput: string, currentSkills: SkillItem[] = INITIAL_SKILLS): UserStoreState {
+  if (typeof jsonInput !== 'string') {
+    throw new Error('Invalid store JSON input: must be a string');
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonInput);
+  } catch {
+    throw new Error('Invalid JSON format');
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Invalid store JSON: expected an object');
+  }
+
+  const obj = parsed as Record<string, unknown>;
+
+  const storeKeys = [
+    'schemaVersion',
+    'examDate',
+    'isRoadMode',
+    'academicStreak',
+    'pianoStreak',
+    'lastAcademicDate',
+    'lastPianoDate',
+    'totalMinutesStudied',
+    'skills',
+    'history',
+  ];
+  const hasStoreKey = storeKeys.some((k) => Object.prototype.hasOwnProperty.call(obj, k));
+
+  if (!hasStoreKey) {
+    throw new Error('Invalid store JSON: missing store structure');
+  }
+
+  if (obj.skills !== undefined && !Array.isArray(obj.skills)) {
+    throw new Error('Invalid store JSON: skills must be an array');
+  }
+  if (obj.history !== undefined && !Array.isArray(obj.history)) {
+    throw new Error('Invalid store JSON: history must be an array');
+  }
+
+  const migrated = migrateUserStore(parsed, currentSkills);
+  saveUserStore(migrated);
+  return migrated;
 }
 
 export function loadUserStore(): UserStoreState {

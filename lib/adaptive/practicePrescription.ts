@@ -25,10 +25,22 @@ export interface SessionPrescription {
   recommendations: PracticeRecommendation[];
 }
 
+export const UCO_EXAM_SKILL_IDS = new Set([
+  // Theory IV
+  't1', 't2', 't3', 't4', 't5', 't6',
+  // Aural Skills IV
+  'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7',
+  // Class Piano IV
+  'p4_scale_eb_maj', 'p4_scale_fs_min_harm', 'p4_scale_ab_maj',
+  'p4_scale_cs_min_mel', 'p4_arp_d_dim7', 'p4_harm_trans_g_to_a',
+  'p4_sight_reading_lvl3', 'p4_project_happy_birthday',
+]);
+
 export function generatePracticePrescription(
   skills: SkillItem[],
   totalMinutes: number = 20,
-  isRoadMode: boolean = false
+  isRoadMode: boolean = false,
+  examDate?: string
 ): SessionPrescription {
   const normalizedTotalMinutes = Math.max(0, Math.floor(totalMinutes));
 
@@ -41,8 +53,21 @@ export function generatePracticePrescription(
     eligibleSkills = [...skills];
   }
 
-  // Sort by lowest mastery score first
-  const sortedWeakest = [...eligibleSkills].sort((a, b) => a.mastery - b.mastery);
+  const getPriorityScore = (s: SkillItem) => {
+    if (examDate && examDate.trim() !== '') {
+      const isUcoExam = UCO_EXAM_SKILL_IDS.has(s.id) || s.category === 'Theory IV' || s.category === 'Aural Skills IV' || s.category === 'Class Piano IV';
+      return s.mastery - (isUcoExam ? 35 : 0);
+    }
+    return s.mastery;
+  };
+
+  // Sort by priority score first, then by mastery
+  const sortedWeakest = [...eligibleSkills].sort((a, b) => {
+    const scoreDiff = getPriorityScore(a) - getPriorityScore(b);
+    if (scoreDiff !== 0) return scoreDiff;
+    return a.mastery - b.mastery;
+  });
+
   const selectedSkills = sortedWeakest.slice(0, Math.min(3, sortedWeakest.length));
 
   if (selectedSkills.length === 0) {
@@ -71,14 +96,20 @@ export function generatePracticePrescription(
     const extra = normalizedTotalMinutes >= selectedCount * 3
       ? (idx === 0 ? remainder : 0)
       : (idx < remainder ? 1 : 0);
+
+    const isExamBiased = Boolean(examDate && examDate.trim() !== '' && UCO_EXAM_SKILL_IDS.has(s.id));
+    const reason = isExamBiased
+      ? `Upcoming UCO IV exam priority (${s.mastery}% mastery)`
+      : (s.mastery < 60
+        ? `Low mastery (${s.mastery}%) - needs immediate focus`
+        : `Spaced repetition retention check (Mastery ${s.mastery}%)`);
+
     return {
       skillId: s.id,
       topic: s.topic,
       category: s.category,
       allocatedMinutes: minutesPerTopic + extra,
-      reason: s.mastery < 60
-        ? `Low mastery (${s.mastery}%) - needs immediate focus`
-        : `Spaced repetition retention check (Mastery ${s.mastery}%)`,
+      reason,
       href: hrefForSkill(s.id, s.category),
     };
   });

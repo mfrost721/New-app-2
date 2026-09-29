@@ -5,6 +5,8 @@ import {
   updateExamDate,
   recordPracticeAttemptInStore,
   migrateUserStore,
+  exportUserStore,
+  importUserStore,
   INITIAL_STATE,
   INITIAL_SKILLS,
   STORE_SCHEMA_VERSION,
@@ -78,6 +80,54 @@ describe('Storage and UserStore Engine', () => {
     expect(loaded.academicStreak).toBe(12);
     expect(loaded.pianoStreak).toBe(8);
     expect(loaded.totalMinutesStudied).toBe(500);
+  });
+
+  it('exports user store to formatted JSON string', () => {
+    const customState: UserStoreState = {
+      ...INITIAL_STATE,
+      academicStreak: 15,
+      examDate: '2026-11-20',
+    };
+    const exported = exportUserStore(customState);
+    expect(exported).toContain('"academicStreak": 15');
+    expect(exported).toContain('"examDate": "2026-11-20"');
+    const parsed = JSON.parse(exported);
+    expect(parsed.academicStreak).toBe(15);
+  });
+
+  it('imports valid user store JSON, preserving existing registry skills missing in file', () => {
+    const existingSkills = [
+      ...INITIAL_SKILLS,
+      { id: 'custom_1', category: 'Theory IV' as const, topic: 'Custom', mastery: 80, totalAttempts: 2, correctAttempts: 2, lastPracticed: '', recentLatencyMs: [], errorHistory: [] },
+    ];
+    const importPayload = JSON.stringify({
+      schemaVersion: 3,
+      examDate: '2027-01-01',
+      skills: [
+        { id: 't1', category: 'Theory IV', topic: 'Sets', mastery: 95, totalAttempts: 10, correctAttempts: 9, lastPracticed: '2026-03-01', recentLatencyMs: [], errorHistory: [] },
+      ],
+      history: [],
+    });
+
+    const imported = importUserStore(importPayload, existingSkills);
+    expect(imported.examDate).toBe('2027-01-01');
+    expect(imported.skills.find(s => s.id === 't1')?.mastery).toBe(95);
+    // Preserves t2 from INITIAL_SKILLS
+    expect(imported.skills.find(s => s.id === 't2')).toBeDefined();
+    // Preserves custom_1 from existing registry
+    expect(imported.skills.find(s => s.id === 'custom_1')?.mastery).toBe(80);
+    // Persists to localStorage
+    expect(loadUserStore().examDate).toBe('2027-01-01');
+  });
+
+  it('rejects garbage JSON inputs during store import', () => {
+    expect(() => importUserStore('not json')).toThrow('Invalid JSON format');
+    expect(() => importUserStore('12345')).toThrow('Invalid store JSON: expected an object');
+    expect(() => importUserStore('true')).toThrow('Invalid store JSON: expected an object');
+    expect(() => importUserStore('[]')).toThrow('Invalid store JSON: expected an object');
+    expect(() => importUserStore('{"randomKey": "noStoreStructure"}')).toThrow('Invalid store JSON: missing store structure');
+    expect(() => importUserStore('{"schemaVersion": 3, "skills": "not-an-array"}')).toThrow('Invalid store JSON: skills must be an array');
+    expect(() => importUserStore('{"schemaVersion": 3, "history": "not-an-array"}')).toThrow('Invalid store JSON: history must be an array');
   });
 
   it('updates exam date only when YYYY-MM-DD', () => {
